@@ -4,7 +4,7 @@ from datetime import datetime as dt
 import requests
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="منظم فراس - النسخة النهائية", layout="wide")
+st.set_page_config(page_title="منظم فراس - النسخة المثالية", layout="wide")
 
 # 2. قائمة التدرجات
 gradients = {
@@ -21,16 +21,14 @@ clr = st.sidebar.color_picker("اختر لون التميز (Accent Color):", "#
 bg_key = st.sidebar.selectbox("اختر تدرج الخلفية:", list(gradients.keys()))
 selected_gradient = gradients[bg_key]
 
-# 4. الـ CSS (تم إصلاح الزر هنا)
+# 4. الـ CSS (تم إصلاح خانات الكتابة والزر معاً)
 st.markdown(f"""
 <style>
-    /* الخلفية المتدرجة */
     .stApp {{
         background: {selected_gradient} !important;
         background-attachment: fixed !important;
     }}
 
-    /* نصوص السايدبار */
     [data-testid="stSidebar"] {{
         background-color: rgba(0,0,0,0.5) !important;
     }}
@@ -39,14 +37,29 @@ st.markdown(f"""
         font-weight: 700 !important;
     }}
 
-    /* العناوين */
     h1, h2, h3 {{
         color: {clr} !important;
         text-align: center;
         text-shadow: 2px 2px 10px rgba(0,0,0,0.7);
     }}
 
-    /* صناديق الصلاة */
+    /* --- إصلاح مكان الكتابة (Inputs) --- */
+    input {{
+        background-color: #ffffff !important; /* خلفية بيضاء للخانات لضمان وضوح الكتابة */
+        color: #000000 !important; /* النص داخل الخانة أسود */
+        border: 2px solid {clr} !important;
+        border-radius: 10px !important;
+        font-weight: bold !important;
+    }}
+
+    /* إصلاح نصوص العناوين فوق الخانات */
+    label {{
+        color: #FFFFFF !important;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+        margin-bottom: 5px !important;
+    }}
+
     .p-box {{
         border: 2px solid {clr};
         padding: 20px;
@@ -54,39 +67,24 @@ st.markdown(f"""
         text-align: center;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(10px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     }}
 
-    /* --- إصلاح زر إضافة مهمة --- */
+    /* --- الزر (قوي وواضح) --- */
     .stButton>button {{
-        background-color: {clr} !important; /* اللون ظاهر دائماً وليس فقط عند التأشير */
-        color: #000000 !important; /* النص أسود وعريض ليكون واضحاً جداً */
+        background-color: {clr} !important;
+        color: #000000 !important;
         border: 2px solid white !important;
         border-radius: 12px !important;
         font-weight: 900 !important;
         font-size: 1.2rem !important;
         height: 55px !important;
         width: 100% !important;
-        display: block !important;
-        box-shadow: 0px 0px 15px {clr}88 !important; /* توهج خفيف ليبرز الزر */
-        margin-top: 10px;
-        transition: all 0.3s ease-in-out;
+        box-shadow: 0px 0px 15px {clr}88 !important;
+        transition: 0.3s ease-in-out;
     }}
-
-    /* تأثير عند وضع الماوس (اختياري للجمالية) */
     .stButton>button:hover {{
         background-color: #FFFFFF !important;
-        color: #000000 !important;
         transform: scale(1.02);
-        box-shadow: 0px 0px 25px #FFFFFF88 !important;
-    }}
-
-    /* تحسين حقول الإدخال */
-    .stTextInput input {{
-        background-color: rgba(255,255,255,0.1) !important;
-        color: white !important;
-        border: 1px solid {clr}55 !important;
-        height: 45px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -95,8 +93,8 @@ st.markdown(f"""
 st.title("📅 FERAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>إبداع: فراس حمد المعمري</p>", unsafe_allow_html=True)
 
-# 6. أوقات الصلاة
-city = st.text_input("📍 المدينة (Muscat):", "Muscat")
+# 6. أوقات الصلاة (المدينة)
+city = st.text_input("📍 اكتب المدينة هنا (مثلاً: Muscat):", "Muscat")
 
 @st.cache_data(ttl=3600)
 def get_p(c):
@@ -118,16 +116,15 @@ st.divider()
 # 7. قسم المهام
 if 'tk' not in st.session_state: st.session_state.tk = []
 
-with st.container():
-    st.subheader("📝 أضف مهمة جديدة")
-    with st.form("task_form", clear_on_submit=True):
-        c1, c2 = st.columns([3, 1])
-        n = c1.text_input("ما هي المهمة؟")
-        tm = c2.time_input("الوقت")
-        submit = st.form_submit_button("إضافة المهمة الآن ✨")
-        if submit and n:
-            st.session_state.tk.append({"المهمة": n, "الوقت": tm.strftime("%I:%M %p")})
-            st.rerun()
+st.subheader("📝 أضف مهمة جديدة")
+with st.form("task_form", clear_on_submit=True):
+    c1, c2 = st.columns([3, 1])
+    n = c1.text_input("ما هي المهمة التي تريد إنجازها؟")
+    tm = c2.time_input("الوقت")
+    submit = st.form_submit_button("إضافة المهمة الآن ✨")
+    if submit and n:
+        st.session_state.tk.append({"المهمة": n, "الوقت": tm.strftime("%I:%M %p")})
+        st.rerun()
 
 # 8. الجدول
 if st.session_state.tk:

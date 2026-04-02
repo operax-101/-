@@ -4,111 +4,115 @@ from datetime import datetime as dt
 import requests
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="منظم فراس", layout="wide")
+st.set_page_config(page_title="منظم فراس الذكي", layout="wide")
 
-# 2. الشريط الجانبي (المظهر)
-st.sidebar.title("🎨 مظهر البرنامج")
-clr = st.sidebar.color_picker("اختر لون التميز (Accent):", "#D4AF37")
-
-# قائمة خلفيات موسعة
-bg_options = {
-    "أسود ملكي": "#000000",
-    "أزرق ليلي": "#0e1117",
-    "رمادي كربوني": "#262730",
-    "بنفسجي غامق": "#120d1c",
-    "رمادي فضائي": "#343a40"
+# 2. قائمة التدرجات اللونية (Gradients)
+gradients = {
+    "ليل مسقط (Dark Blue)": "linear-gradient(180deg, #0f2027, #203a43, #2c5364)",
+    "الفجر الذهبي (Golden)": "linear-gradient(180deg, #131112, #2c2512, #4e4321)",
+    "الغروب الأرجواني (Deep Purple)": "linear-gradient(180deg, #0f0c29, #302b63, #24243e)",
+    "غابة ليلية (Dark Green)": "linear-gradient(180deg, #000000, #09203f, #1e4b52)",
+    "رمادي ملكي (Silver/Black)": "linear-gradient(180deg, #232526, #414345)",
+    "أزرق كهربائي (Electric)": "linear-gradient(180deg, #000428, #004e92)",
+    "احترافي (Carbon)": "linear-gradient(180deg, #141e30, #243b55)",
+    "أسود مطلق (Solid Black)": "linear-gradient(180deg, #000000, #111111)"
 }
-bg_label = st.sidebar.selectbox("اختر لون الخلفية:", list(bg_options.keys()))
-bg = bg_options[bg_label]
 
-# نظام التنسيق المطور (CSS) لضمان الوضوح التام
+# 3. الشريط الجانبي
+st.sidebar.title("🎨 لوحة التحكم بالمظهر")
+clr = st.sidebar.color_picker("اختر لون الأزرار والحدود (Accent):", "#D4AF37")
+bg_key = st.sidebar.selectbox("اختر تدرج الخلفية:", list(gradients.keys()))
+selected_gradient = gradients[bg_key]
+
+# 4. نظام الـ CSS المتكامل (الحل النهائي للوضوح)
 st.markdown(f"""
 <style>
-    /* الخلفية الأساسية مع تدرج انسيابي */
+    /* تطبيق التدرج على كامل التطبيق */
     .stApp {{
-        background: linear-gradient(180deg, {bg} 0%, #000000 100%) !important;
-        background-attachment: fixed;
+        background: {selected_gradient} !important;
+        background-attachment: fixed !important;
     }}
-    
-    /* إجبار نصوص السايدبار على الظهور بوضوح 100% */
+
+    /* إجبار كل نصوص السايدبار على اللون الأبيض الصريح */
     [data-testid="stSidebar"] {{
-        background-color: rgba(0,0,0,0.3) !important;
-        backdrop-filter: blur(10px);
+        background-color: rgba(0,0,0,0.4) !important;
     }}
     [data-testid="stSidebar"] * {{
         color: white !important;
         font-weight: 700 !important;
-        opacity: 1 !important;
+        font-size: 16px !important;
     }}
 
-    /* العناوين الرئيسية */
+    /* العناوين بلمسة احترافية */
     h1, h2, h3 {{
         color: {clr} !important;
         text-align: center;
         font-weight: 800 !important;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        text-shadow: 3px 3px 10px rgba(0,0,0,0.7);
     }}
 
-    /* نصوص البرنامج العامة */
+    /* نصوص البرنامج */
     p, span, label, .stMarkdown {{
         color: white !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
     }}
 
-    /* صناديق الصلاة الاحترافية */
+    /* صناديق الصلاة - تصميم زجاجي (Glassmorphism) */
     .p-box {{
         border: 2px solid {clr};
-        padding: 15px;
+        padding: 20px;
         border-radius: 15px;
         text-align: center;
-        background: rgba(255, 255, 255, 0.05);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        transition: 0.3s;
+        background: rgba(0, 0, 0, 0.4); 
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        transition: 0.4s ease;
     }}
     .p-box:hover {{
-        transform: translateY(-5px);
+        transform: scale(1.05);
         border-color: white;
+        background: rgba(255, 255, 255, 0.1);
     }}
 
-    /* زر الإضافة - نص أسود عريض للوضوح */
+    /* الزر - تباين عالي جداً (نص أسود عريض) */
     .stButton>button {{
         background-color: {clr} !important;
-        color: black !important;
+        color: #000000 !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         font-weight: 900 !important;
-        font-size: 18px !important;
+        font-size: 1.1rem !important;
+        height: 50px !important;
         width: 100% !important;
-        padding: 10px !important;
-        box-shadow: 0px 4px 15px {clr}44 !important;
+        box-shadow: 0px 5px 15px {clr}66 !important;
     }}
     .stButton>button:hover {{
         background-color: white !important;
-        color: black !important;
+        transform: translateY(-3px);
     }}
 
-    /* تنسيق الجداول وحقول الإدخال */
-    input {{
-        color: white !important;
+    /* تحسين شكل حقول الإدخال */
+    .stTextInput input, .stTimeInput input {{
         background-color: rgba(255,255,255,0.1) !important;
+        color: white !important;
+        border: 1px solid {clr}55 !important;
     }}
 </style>
 """, unsafe_allow_html=True)
 
-# 3. واجهة البرنامج الرئيسية
+# 5. محتوى البرنامج
 st.title("📅 FERAS SCHEDULER")
-st.markdown(f"<p style='text-align:center; font-size:1.2rem; opacity:0.9;'>إبداع المبرمج: فراس حمد المعمري</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center; font-size:1.3rem; color:{clr};'>إبداع: فراس حمد المعمري</p>", unsafe_allow_html=True)
 
-# 4. جلب أوقات الصلاة
-city = st.text_input("📍 المدينة (مثال: Muscat):", "Muscat")
+# 6. أوقات الصلاة
+city = st.text_input("📍 اكتب مدينتك بالإنجليزية (مثال: Muscat):", "Muscat")
 
 @st.cache_data(ttl=3600)
 def get_p(c):
     try:
         r = requests.get(f"http://api.aladhan.com/v1/timingsByCity?city={c}&country=Oman&method=4").json()
         return r['data']['timings']
-    except:
-        return None
+    except: return None
 
 t = get_p(city)
 if t:
@@ -118,37 +122,36 @@ if t:
         time_12 = dt.strptime(t[k], "%H:%M").strftime("%I:%M %p")
         cols[i].markdown(f"""
             <div class="p-box">
-                <b style="color:{clr}; font-size: 1.2rem;">{v}</b><br>
-                <span style="font-size: 1.1rem;">{time_12}</span>
+                <div style="color:{clr}; font-size: 1.4rem; font-weight:bold; margin-bottom:5px;">{v}</div>
+                <div style="font-size: 1.2rem; color: white;">{time_12}</div>
             </div>
         """, unsafe_allow_html=True)
 
 st.divider()
 
-# 5. إدارة المهام
-st.subheader("📝 إضافة مهمة جديدة")
-if 'tk' not in st.session_state: 
-    st.session_state.tk = []
+# 7. إضافة المهام
+st.subheader("📝 أضف مهمة لجدولك")
+if 'tk' not in st.session_state: st.session_state.tk = []
 
 with st.form("task_form", clear_on_submit=True):
-    c1, c2 = st.columns([3, 1])
-    n = c1.text_input("ما هي المهمة القادمة؟")
-    tm = c2.time_input("الوقت")
-    if st.form_submit_button("إضافة المهمة ✨"):
+    col_input, col_time = st.columns([3, 1])
+    n = col_input.text_input("ما هي المهمة؟")
+    tm = col_time.time_input("الوقت")
+    if st.form_submit_button("إضافة المهمة الآن ✨"):
         if n:
             st.session_state.tk.append({"المهمة": n, "الوقت": tm.strftime("%I:%M %p")})
             st.rerun()
 
-# 6. عرض الجدول
+# 8. عرض المهام بتنسيق نظيف
 if st.session_state.tk:
-    st.subheader("🕒 جدول مهامك")
+    st.subheader("🕒 جدولك لليوم")
     df = pd.DataFrame(st.session_state.tk)
-    st.table(df) # أو استخدم st.dataframe(df, use_container_width=True)
+    st.table(df)
     
-    if st.button("🗑️ مسح كل المهام"):
+    if st.button("🗑️ مسح الجدول"):
         st.session_state.tk = []
         st.rerun()
 
-# التوقيع في السايدبار
+# التذييل
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **فراس حمد المعمري**")

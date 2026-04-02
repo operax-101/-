@@ -14,63 +14,52 @@ bg = st.sidebar.selectbox("اختر لون الخلفية:", ["#0e1117", "#00000
 # تحسين الـ CSS لضمان الوضوح التام
 st.markdown(f"""
 <style>
-    /* تلوين الخلفية والجسم */
+    /* 1. تثبيت لون الخلفية */
     .stApp {{
-        background-color: {bg};
+        background-color: {bg} !important;
     }}
     
-    /* التأكد من أن كل النصوص باللون الأبيض الواضح */
-    .stApp, p, span, label, .stMarkdown {{
+    /* 2. إجبار كل النصوص في البرنامج والسايدبار على الوضوح التام */
+    .stApp, p, span, label, .stMarkdown, [data-testid="stSidebar"] {{
         color: #FFFFFF !important;
-        font-weight: 500;
+        font-weight: 600 !important; /* زيادة سمك الخط */
     }}
 
-    /* تحسين العناوين */
-    h1, h2, h3 {{
+    /* 3. تنسيق العناوين الرئيسية بلمعان */
+    h1, h2, h3, [data-testid="stHeader"] {{
         color: {clr} !important;
         text-align: center;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        text-shadow: 1px 1px 10px rgba(0,0,0,0.8);
     }}
 
-    /* تنسيق أزرار الإدخال والحقول */
-    .stTextInput>div>div>input, .stTimeInput>div>div>input {{
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        color: white !important;
-        border: 1px solid {clr}33 !important;
-    }}
-
-    /* تنسيق الزر */
+    /* 4. إصلاح مشكلة الزر (اللون الأبيض الذي يغطي النص) */
     .stButton>button {{
-        background: linear-gradient(135deg, {clr}, #8B6B13);
-        color: white !important;
-        border: none;
-        width: 100%;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: 0.3s;
+        background: {clr} !important; /* لون الزر الأساسي */
+        color: black !important; /* لون النص داخل الزر (أسود للوضوح) */
+        border: none !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        padding: 10px !important;
     }}
     .stButton>button:hover {{
-        transform: scale(1.02);
-        box-shadow: 0px 4px 15px {clr}66;
+        background: white !important; /* يتغير للأبيض عند تمرير الماوس */
+        color: black !important;
     }}
 
-    /* صناديق أوقات الصلاة */
+    /* 5. تحسين صناديق الصلاة لتكون بارزة */
     .p-box {{
         border: 2px solid {clr};
         padding: 15px;
-        border-radius: 15px;
+        border-radius: 12px;
         text-align: center;
-        background: rgba(255, 255, 255, 0.07);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px); /* تأثير زجاجي ناعم */
     }}
     
-    /* تنسيق الجدول */
-    .styled-table {{
-        width: 100%;
-        border-collapse: collapse;
-        margin: 25px 0;
-        font-size: 18px;
-        text-align: right;
+    /* 6. تنسيق حقول الإدخال لتكون واضحة */
+    input {{
+        color: white !important;
+        background-color: #262730 !important;
     }}
 </style>
 """, unsafe_allow_html=True)

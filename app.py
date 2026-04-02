@@ -14,64 +14,63 @@ bg = st.sidebar.selectbox("اختر لون الخلفية:", ["#0e1117", "#00000
 # تحسين الـ CSS لضمان الوضوح التام
 st.markdown(f"""
 <style>
-    /* 1. ضبط الخلفية والخط الأساسي */
+    /* 1. الخلفية الأساسية */
     .stApp {{
         background-color: {bg} !important;
     }}
     
-    /* 2. إجبار كل النصوص على اللون الأبيض الناصع (بما فيها السايدبار) */
-    .stApp, p, span, label, .stMarkdown, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {{
-        color: #FFFFFF !important;
-        font-weight: 600 !important;
-        opacity: 1 !important; /* إلغاء الشفافية التي تجعل الخط باهت */
+    /* 2. السايدبار: جعل النصوص بيضاء ناصعة وواضحة جداً */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] label {{
+        color: white !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        opacity: 1 !important;
     }}
 
-    /* 3. تنسيق العناوين (إضافة توهج خفيف) */
-    h1, h2, h3, [data-testid="stHeader"] {{
+    /* 3. العناوين الرئيسية */
+    h1, h2, h3 {{
         color: {clr} !important;
         text-align: center;
-        text-shadow: 0px 0px 10px {clr}55;
+        font-weight: 800 !important;
+        text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
     }}
 
-    /* 4. إصلاح الزر (تغيير لون الخلفية والنص داخله ليكون واضحاً) */
+    /* 4. الزر: النص أسود عريض ليظهر فوق الخلفية الذهبية */
     .stButton>button {{
         background-color: {clr} !important;
-        color: #000000 !important; /* النص أسود ليكون واضحاً جداً فوق اللون الذهبي/الفاتح */
+        color: black !important; /* النص أسود للوضوح */
         border: none !important;
-        border-radius: 10px !important;
-        font-weight: bold !important;
+        border-radius: 12px !important;
+        font-weight: 900 !important; /* خط سميك جداً */
         font-size: 18px !important;
-        height: 45px !important;
-        transition: 0.3s ease;
+        width: 100% !important;
+        padding: 12px !important;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
     }}
+    
+    /* تأثير عند تمرير الماوس على الزر */
     .stButton>button:hover {{
-        background-color: #FFFFFF !important;
-        box-shadow: 0px 0px 15px #FFFFFF66;
-        transform: translateY(-2px);
+        background-color: white !important;
+        color: black !important;
+        transform: scale(1.01);
     }}
 
-    /* 5. تحسين صناديق الصلاة (تأثير الزجاج الملون) */
+    /* 5. صناديق الصلاة: إضافة حدود واضحة وخلفية داكنة */
     .p-box {{
         border: 2px solid {clr};
         padding: 15px;
         border-radius: 15px;
         text-align: center;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.4); /* خلفية سوداء شفافة لتبرز النص الأبيض */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.6);
     }}
 
-    /* 6. تنسيق حقول الإدخال لتظهر نصوصها بوضوح */
-    input {{
+    /* 6. نصوص حقول الإدخال */
+    .stTextInput label, .stTimeInput label {{
         color: white !important;
-        background-color: rgba(255,255,255,0.1) !important;
-        border: 1px solid {clr}44 !important;
-    }}
-    
-    /* تنسيق السايدبار بالكامل */
-    [data-testid="stSidebar"] {{
-        background-color: rgba(0,0,0,0.2) !important;
-        border-left: 1px solid {clr}33;
+        font-size: 15px !important;
     }}
 </style>
 """, unsafe_allow_html=True)

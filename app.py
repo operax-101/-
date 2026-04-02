@@ -21,7 +21,7 @@ clr = st.sidebar.color_picker("اختر لون التميز (Accent Color):", "#
 bg_key = st.sidebar.selectbox("اختر تدرج الخلفية:", list(gradients.keys()))
 selected_gradient = gradients[bg_key]
 
-# 4. الـ CSS (تم إصلاح خانات الكتابة والزر معاً)
+# 4. الـ CSS (تمت إضافة تنسيق الجدول الواضح)
 st.markdown(f"""
 <style>
     .stApp {{
@@ -43,21 +43,18 @@ st.markdown(f"""
         text-shadow: 2px 2px 10px rgba(0,0,0,0.7);
     }}
 
-    /* --- إصلاح مكان الكتابة (Inputs) --- */
     input {{
-        background-color: #ffffff !important; /* خلفية بيضاء للخانات لضمان وضوح الكتابة */
-        color: #000000 !important; /* النص داخل الخانة أسود */
+        background-color: #ffffff !important;
+        color: #000000 !important;
         border: 2px solid {clr} !important;
         border-radius: 10px !important;
         font-weight: bold !important;
     }}
 
-    /* إصلاح نصوص العناوين فوق الخانات */
     label {{
         color: #FFFFFF !important;
         font-size: 1.1rem !important;
         font-weight: bold !important;
-        margin-bottom: 5px !important;
     }}
 
     .p-box {{
@@ -69,7 +66,6 @@ st.markdown(f"""
         backdrop-filter: blur(10px);
     }}
 
-    /* --- الزر (قوي وواضح) --- */
     .stButton>button {{
         background-color: {clr} !important;
         color: #000000 !important;
@@ -80,11 +76,33 @@ st.markdown(f"""
         height: 55px !important;
         width: 100% !important;
         box-shadow: 0px 0px 15px {clr}88 !important;
-        transition: 0.3s ease-in-out;
     }}
-    .stButton>button:hover {{
-        background-color: #FFFFFF !important;
-        transform: scale(1.02);
+
+    /* --- تنسيق الجدول الجديد (واضح جداً) --- */
+    .task-table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 1.1rem;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 15px;
+        overflow: hidden;
+        border: 1px solid {clr};
+    }}
+    .task-table th {{
+        background-color: {clr};
+        color: black;
+        padding: 12px;
+        text-align: center;
+    }}
+    .task-table td {{
+        padding: 12px;
+        text-align: center;
+        color: white;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }}
+    .task-table tr:hover {{
+        background-color: rgba(255,255,255,0.05);
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -93,7 +111,7 @@ st.markdown(f"""
 st.title("📅 FERAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>إبداع: فراس حمد المعمري</p>", unsafe_allow_html=True)
 
-# 6. أوقات الصلاة (المدينة)
+# 6. أوقات الصلاة
 city = st.text_input("📍 اكتب المدينة هنا (مثلاً: Muscat):", "Muscat")
 
 @st.cache_data(ttl=3600)
@@ -126,11 +144,18 @@ with st.form("task_form", clear_on_submit=True):
         st.session_state.tk.append({"المهمة": n, "الوقت": tm.strftime("%I:%M %p")})
         st.rerun()
 
-# 8. الجدول
+# 8. عرض الجدول (باستخدام التنسيق المخصص الجديد)
 if st.session_state.tk:
     st.subheader("🕒 جدولك الحالي")
-    df = pd.DataFrame(st.session_state.tk)
-    st.table(df)
+    
+    # بناء الجدول يدوياً باستخدام HTML لضمان أفضل وضوح
+    table_html = '<table class="task-table"><thead><tr><th>المهمة</th><th>الوقت</th></tr></thead><tbody>'
+    for task in st.session_state.tk:
+        table_html += f'<tr><td>{task["المهمة"]}</td><td>{task["الوقت"]}</td></tr>'
+    table_html += '</tbody></table>'
+    
+    st.markdown(table_html, unsafe_allow_html=True)
+    
     if st.button("🗑️ مسح الكل"):
         st.session_state.tk = []
         st.rerun()

@@ -14,67 +14,47 @@ bg = st.sidebar.selectbox("اختر لون الخلفية:", ["#0e1117", "#00000
 # تحسين الـ CSS لضمان الوضوح التام
 st.markdown(f"""
 <style>
-    /* 1. الخلفية الأساسية */
-    .stApp {{
-        background-color: {bg} !important;
-    }}
-    
-    /* 2. السايدبار: جعل النصوص بيضاء ناصعة وواضحة جداً */
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p, 
+    /* 1. السايدبار: حل نهائي لمشكلة البهتان */
+    /* استهداف جميع النصوص داخل السايدبار وإلغاء أي شفافية */
+    [data-testid="stSidebar"] *, 
+    [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span, 
     [data-testid="stSidebar"] label {{
-        color: white !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
-        opacity: 1 !important;
+        color: #FFFFFF !important; /* أبيض ناصع */
+        font-weight: 800 !important; /* خط سميك جداً */
+        opacity: 1 !important; /* إلغاء الشفافية تماماً */
     }}
 
-    /* 3. العناوين الرئيسية */
-    h1, h2, h3 {{
+    /* جعل خلفية السايدبار داكنة لتناسب النصوص البيضاء */
+    [data-testid="stSidebar"] {{
+        background-color: #1a1c23 !important;
+    }}
+
+    /* 2. تلوين العناوين الجانبية (مثل مظهر البرنامج) */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2 {{
         color: {clr} !important;
-        text-align: center;
-        font-weight: 800 !important;
-        text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+        text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
     }}
 
-    /* 4. الزر: النص أسود عريض ليظهر فوق الخلفية الذهبية */
+    /* 3. إصلاح الزر الرئيسي في وسط الصفحة */
     .stButton>button {{
         background-color: {clr} !important;
-        color: black !important; /* النص أسود للوضوح */
+        color: #000000 !important; /* النص أسود ليكون واضحاً */
+        font-weight: 900 !important;
+        border-radius: 8px !important;
         border: none !important;
-        border-radius: 12px !important;
-        font-weight: 900 !important; /* خط سميك جداً */
-        font-size: 18px !important;
-        width: 100% !important;
-        padding: 12px !important;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
-    }}
-    
-    /* تأثير عند تمرير الماوس على الزر */
-    .stButton>button:hover {{
-        background-color: white !important;
-        color: black !important;
-        transform: scale(1.01);
     }}
 
-    /* 5. صناديق الصلاة: إضافة حدود واضحة وخلفية داكنة */
+    /* 4. صناديق الصلاة */
     .p-box {{
         border: 2px solid {clr};
-        padding: 15px;
+        background-color: rgba(0,0,0,0.5);
         border-radius: 15px;
-        text-align: center;
-        background: rgba(0, 0, 0, 0.4); /* خلفية سوداء شفافة لتبرز النص الأبيض */
-        box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-    }}
-
-    /* 6. نصوص حقول الإدخال */
-    .stTextInput label, .stTimeInput label {{
+        padding: 15px;
         color: white !important;
-        font-size: 15px !important;
     }}
 </style>
 """, unsafe_allow_html=True)
-
 st.title("📅 FERAS SCHEDULER")
 st.markdown(f"<h3 style='font-size: 20px; opacity: 0.8;'>إبداع: فراس حمد المعمري</h3>", unsafe_allow_html=True)
 

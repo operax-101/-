@@ -4,7 +4,7 @@ from datetime import datetime as dt
 import requests
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="منظم فراس - النسخة المثالية", layout="wide")
+st.set_page_config(page_title="منظم فراس - النسخة الاحترافية", layout="wide")
 
 # 2. قائمة التدرجات
 gradients = {
@@ -21,7 +21,7 @@ clr = st.sidebar.color_picker("اختر لون التميز (Accent Color):", "#
 bg_key = st.sidebar.selectbox("اختر تدرج الخلفية:", list(gradients.keys()))
 selected_gradient = gradients[bg_key]
 
-# 4. الـ CSS (تمت إضافة تنسيق الجدول الواضح)
+# 4. الـ CSS
 st.markdown(f"""
 <style>
     .stApp {{
@@ -48,12 +48,10 @@ st.markdown(f"""
         color: #000000 !important;
         border: 2px solid {clr} !important;
         border-radius: 10px !important;
-        font-weight: bold !important;
     }}
 
     label {{
         color: #FFFFFF !important;
-        font-size: 1.1rem !important;
         font-weight: bold !important;
     }}
 
@@ -75,15 +73,12 @@ st.markdown(f"""
         font-size: 1.2rem !important;
         height: 55px !important;
         width: 100% !important;
-        box-shadow: 0px 0px 15px {clr}88 !important;
     }}
 
-    /* --- تنسيق الجدول الجديد (واضح جداً) --- */
     .task-table {{
         width: 100%;
         border-collapse: collapse;
         margin: 20px 0;
-        font-size: 1.1rem;
         background-color: rgba(0, 0, 0, 0.5);
         border-radius: 15px;
         overflow: hidden;
@@ -92,17 +87,14 @@ st.markdown(f"""
     .task-table th {{
         background-color: {clr};
         color: black;
-        padding: 12px;
+        padding: 15px;
         text-align: center;
     }}
     .task-table td {{
-        padding: 12px;
+        padding: 15px;
         text-align: center;
         color: white;
         border-bottom: 1px solid rgba(255,255,255,0.1);
-    }}
-    .task-table tr:hover {{
-        background-color: rgba(255,255,255,0.05);
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -131,32 +123,54 @@ if t:
 
 st.divider()
 
-# 7. قسم المهام
+# 7. قسم المهام المطور (بداية ونهاية)
 if 'tk' not in st.session_state: st.session_state.tk = []
 
-st.subheader("📝 أضف مهمة جديدة")
+st.subheader("📝 أضف مهمة جديدة بتوقيت محدد")
 with st.form("task_form", clear_on_submit=True):
-    c1, c2 = st.columns([3, 1])
-    n = c1.text_input("ما هي المهمة التي تريد إنجازها؟")
-    tm = c2.time_input("الوقت")
-    submit = st.form_submit_button("إضافة المهمة الآن ✨")
+    n = st.text_input("ما هي المهمة؟")
+    
+    c1, c2 = st.columns(2)
+    t_start = c1.time_input("وقت البداية")
+    t_end = c2.time_input("وقت النهاية")
+    
+    submit = st.form_submit_button("إضافة المهمة للجدول ✨")
+    
     if submit and n:
-        st.session_state.tk.append({"المهمة": n, "الوقت": tm.strftime("%I:%M %p")})
+        start_str = t_start.strftime("%I:%M %p")
+        end_str = t_end.strftime("%I:%M %p")
+        st.session_state.tk.append({
+            "المهمة": n, 
+            "الفترة": f"{start_str} - {end_str}"
+        })
         st.rerun()
 
-# 8. عرض الجدول (باستخدام التنسيق المخصص الجديد)
+# 8. عرض الجدول المحدث
 if st.session_state.tk:
-    st.subheader("🕒 جدولك الحالي")
+    st.subheader("🕒 جدولك الزمني")
     
-    # بناء الجدول يدوياً باستخدام HTML لضمان أفضل وضوح
-    table_html = '<table class="task-table"><thead><tr><th>المهمة</th><th>الوقت</th></tr></thead><tbody>'
+    table_html = f'''
+    <table class="task-table">
+        <thead>
+            <tr>
+                <th>المهمة</th>
+                <th>الفترة الزمنية (من - إلى)</th>
+            </tr>
+        </thead>
+        <tbody>
+    '''
     for task in st.session_state.tk:
-        table_html += f'<tr><td>{task["المهمة"]}</td><td>{task["الوقت"]}</td></tr>'
+        table_html += f'''
+            <tr>
+                <td style="font-weight:bold;">{task["المهمة"]}</td>
+                <td style="color:{clr};">{task["الفترة"]}</td>
+            </tr>
+        '''
     table_html += '</tbody></table>'
     
     st.markdown(table_html, unsafe_allow_html=True)
     
-    if st.button("🗑️ مسح الكل"):
+    if st.button("🗑️ مسح الجدول بالكامل"):
         st.session_state.tk = []
         st.rerun()
 

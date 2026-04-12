@@ -113,47 +113,60 @@ with st.form("task_form", clear_on_submit=True):
     c1, c2 = st.columns(2)
     t_start = c1.time_input("البداية")
     t_end = c2.time_input("النهاية")
+    
     if st.form_submit_button("إضافة ✨") and task_name:
         st.session_state.tk.append({
             "name": task_name,
             "start": t_start.strftime("%I:%M %p"),
             "end": t_end.strftime("%I:%M %p"),
-            "raw_time": t_start # للحفاظ على كائن الوقت من أجل الترتيب
+            "raw_time": t_start.strftime("%H:%M") # تخزين بصيغة نصية قابلة للترتيب
         })
         st.rerun()
 
-# 8. عرض الجدول المرتب
+# 8. عرض الجدول المرتب (مع حماية ضد KeyError)
 if st.session_state.tk:
     st.subheader("🕒 جدولك الزمني")
     
-    # تحويل لـ DataFrame للترتيب
-    df = pd.DataFrame(st.session_state.tk)
-    # التأكد من الترتيب حسب وقت البداية
-    df = df.sort_values(by="raw_time")
-    
-    table_html = f'''
-    <table class="task-table">
-        <thead>
-            <tr>
-                <th>المهمة</th>
-                <th>الفترة الزمنية</th>
-            </tr>
-        </thead>
-        <tbody>
-    '''
-    for _, row in df.iterrows():
-        table_html += f'''
-            <tr>
-                <td style="font-weight:bold;">{row['name']}</td>
-                <td style="color:{clr};">{row['start']} - {row['end']}</td>
-            </tr>
+    try:
+        df = pd.DataFrame(st.session_state.tk)
+        
+        # التأكد من وجود عمود الترتيب، وإذا لم يوجد نقوم بمسح القائمة القديمة لتجنب الخطأ
+        if "raw_time" not in df.columns:
+            st.session_state.tk = []
+            st.rerun()
+            
+        df = df.sort_values(by="raw_time")
+        
+        table_html = f'''
+        <table class="task-table">
+            <thead>
+                <tr>
+                    <th>المهمة</th>
+                    <th>الفترة الزمنية</th>
+                </tr>
+            </thead>
+            <tbody>
         '''
-    table_html += "</tbody></table>"
-    st.markdown(table_html, unsafe_allow_html=True)
-    
-    if st.button("🗑️ مسح الكل"):
-        st.session_state.tk = []
-        st.rerun()
+        for _, row in df.iterrows():
+            table_html += f'''
+                <tr>
+                    <td style="font-weight:bold;">{row['name']}</td>
+                    <td style="color:{clr};">{row['start']} - {row['end']}</td>
+                </tr>
+            '''
+        table_html += "</tbody></table>"
+        st.markdown(table_html, unsafe_allow_html=True)
+        
+        if st.button("🗑️ مسح الكل"):
+            st.session_state.tk = []
+            st.rerun()
+            
+    except Exception as e:
+        # في حال حدوث أي خطأ مفاجئ، نعطي خياراً لمسح البيانات
+        st.error("حدث خطأ في عرض الجدول بسبب بيانات قديمة.")
+        if st.button("تصفير الذاكرة الآن"):
+            st.session_state.tk = []
+            st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **فراس حمد المعمري**")

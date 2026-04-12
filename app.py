@@ -4,9 +4,9 @@ from datetime import datetime as dt
 import requests
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="منظم فراس - النسخة الاحترافية", layout="wide", page_icon="📅")
+st.set_page_config(page_title="منظم فراس - النسخة النهائية", layout="wide", page_icon="📅")
 
-# 2. قائمة التدرجات اللونية
+# 2. قائمة التدرجات
 gradients = {
     "تدرج المحيط (Deep Ocean)": "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
     "تدرج الغسق (Sunset Dusk)": "linear-gradient(135deg, #2c3e50 0%, #000000 100%)",
@@ -24,58 +24,14 @@ selected_gradient = gradients[bg_key]
 # 4. التصميم المخصص (CSS)
 st.markdown(f"""
 <style>
-    .stApp {{
-        background: {selected_gradient} !important;
-        background-attachment: fixed !important;
-    }}
-    [data-testid="stSidebar"] {{
-        background-color: rgba(0,0,0,0.5) !important;
-        backdrop-filter: blur(10px);
-    }}
-    h1, h2, h3 {{
-        color: {clr} !important;
-        text-align: center;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.7);
-    }}
-    input {{
-        border: 2px solid {clr} !important;
-        border-radius: 10px !important;
-    }}
-    .p-box {{
-        border: 2px solid {clr};
-        padding: 15px;
-        border-radius: 15px;
-        text-align: center;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(10px);
-    }}
-    .stButton>button {{
-        background-color: {clr} !important;
-        color: #000000 !important;
-        font-weight: 900 !important;
-        border-radius: 12px !important;
-        width: 100% !important;
-        height: 50px !important;
-    }}
-    .task-table {{
-        width: 100%;
-        border-collapse: collapse;
-        background-color: rgba(0, 0, 0, 0.5);
-        border-radius: 15px;
-        overflow: hidden;
-        border: 1px solid {clr};
-    }}
-    .task-table th {{
-        background-color: {clr};
-        color: black;
-        padding: 15px;
-    }}
-    .task-table td {{
-        padding: 15px;
-        text-align: center;
-        color: white;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-    }}
+    .stApp {{ background: {selected_gradient} !important; background-attachment: fixed !important; }}
+    [data-testid="stSidebar"] {{ background-color: rgba(0,0,0,0.5) !important; backdrop-filter: blur(10px); }}
+    h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
+    .p-box {{ border: 2px solid {clr}; padding: 15px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); }}
+    .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; }}
+    .task-table {{ width: 100%; border-collapse: collapse; background-color: rgba(0, 0, 0, 0.5); border-radius: 15px; overflow: hidden; border: 1px solid {clr}; }}
+    .task-table th {{ background-color: {clr}; color: black; padding: 15px; }}
+    .task-table td {{ padding: 15px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,7 +41,6 @@ st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-w
 
 # 6. أوقات الصلاة
 city = st.text_input("📍 اكتب المدينة هنا:", "Muscat")
-
 @st.cache_data(ttl=3600)
 def get_p(c):
     try:
@@ -103,9 +58,15 @@ if t:
 
 st.divider()
 
-# 7. إدارة المهام
+# 7. إدارة المهام (مع كود تنظيف تلقائي)
 if 'tk' not in st.session_state:
     st.session_state.tk = []
+
+# --- كود الحماية من KeyError ---
+if st.session_state.tk and len(st.session_state.tk) > 0:
+    if "raw_time" not in st.session_state.tk[0]:
+        st.session_state.tk = [] # تصفير البيانات القديمة فوراً
+        st.rerun()
 
 st.subheader("📝 أضف مهمة جديدة")
 with st.form("task_form", clear_on_submit=True):
@@ -119,54 +80,24 @@ with st.form("task_form", clear_on_submit=True):
             "name": task_name,
             "start": t_start.strftime("%I:%M %p"),
             "end": t_end.strftime("%I:%M %p"),
-            "raw_time": t_start.strftime("%H:%M") # تخزين بصيغة نصية قابلة للترتيب
+            "raw_time": t_start.strftime("%H:%M") 
         })
         st.rerun()
 
-# 8. عرض الجدول المرتب (مع حماية ضد KeyError)
+# 8. عرض الجدول
 if st.session_state.tk:
     st.subheader("🕒 جدولك الزمني")
+    df = pd.DataFrame(st.session_state.tk).sort_values(by="raw_time")
     
-    try:
-        df = pd.DataFrame(st.session_state.tk)
-        
-        # التأكد من وجود عمود الترتيب، وإذا لم يوجد نقوم بمسح القائمة القديمة لتجنب الخطأ
-        if "raw_time" not in df.columns:
-            st.session_state.tk = []
-            st.rerun()
-            
-        df = df.sort_values(by="raw_time")
-        
-        table_html = f'''
-        <table class="task-table">
-            <thead>
-                <tr>
-                    <th>المهمة</th>
-                    <th>الفترة الزمنية</th>
-                </tr>
-            </thead>
-            <tbody>
-        '''
-        for _, row in df.iterrows():
-            table_html += f'''
-                <tr>
-                    <td style="font-weight:bold;">{row['name']}</td>
-                    <td style="color:{clr};">{row['start']} - {row['end']}</td>
-                </tr>
-            '''
-        table_html += "</tbody></table>"
-        st.markdown(table_html, unsafe_allow_html=True)
-        
-        if st.button("🗑️ مسح الكل"):
-            st.session_state.tk = []
-            st.rerun()
-            
-    except Exception as e:
-        # في حال حدوث أي خطأ مفاجئ، نعطي خياراً لمسح البيانات
-        st.error("حدث خطأ في عرض الجدول بسبب بيانات قديمة.")
-        if st.button("تصفير الذاكرة الآن"):
-            st.session_state.tk = []
-            st.rerun()
+    table_html = f'<table class="task-table"><thead><tr><th>المهمة</th><th>الفترة الزمنية</th></tr></thead><tbody>'
+    for _, row in df.iterrows():
+        table_html += f"<tr><td style='font-weight:bold;'>{row['name']}</td><td style='color:{clr};'>{row['start']} - {row['end']}</td></tr>"
+    table_html += "</tbody></table>"
+    st.markdown(table_html, unsafe_allow_html=True)
+    
+    if st.button("🗑️ مسح الكل"):
+        st.session_state.tk = []
+        st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **فراس حمد المعمري**")

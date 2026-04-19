@@ -29,16 +29,6 @@ st.markdown(f"""
     h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
     .p-box {{ border: 2px solid {clr}; padding: 15px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); }}
     .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; width: 100%; }}
-    .task-row {{ 
-        background: rgba(255, 255, 255, 0.05); 
-        padding: 15px; 
-        border-radius: 10px; 
-        margin-bottom: 10px; 
-        border-right: 5px solid {clr};
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,9 +59,9 @@ st.divider()
 if 'tk' not in st.session_state:
     st.session_state.tk = []
 
-# حماية البيانات وتصفيرها إذا كانت قديمة (KeyError Protection)
-if st.session_state.tk and len(st.session_state.tk) > 0:
-    if "raw_time" not in st.session_state.tk[0]:
+# --- كود الحماية من KeyError (تنظيف البيانات القديمة التي لا تحتوي على id) ---
+if st.session_state.tk:
+    if not all("id" in task for task in st.session_state.tk):
         st.session_state.tk = []
         st.rerun()
 
@@ -84,7 +74,7 @@ with st.form("task_form", clear_on_submit=True):
     
     if st.form_submit_button("إضافة ✨") and task_name:
         st.session_state.tk.append({
-            "id": dt.now().timestamp(), # معرف فريد للحذف بدقة
+            "id": str(dt.now().timestamp()), # معرف فريد نصي
             "name": task_name,
             "start": t_start.strftime("%I:%M %p"),
             "end": t_end.strftime("%I:%M %p"),
@@ -96,35 +86,35 @@ with st.form("task_form", clear_on_submit=True):
 if st.session_state.tk:
     st.subheader("🕒 جدولك الزمني")
     
-    # ترتيب المهام حسب الوقت
+    # ترتيب المهام حسب وقت البداية
     sorted_tasks = sorted(st.session_state.tk, key=lambda x: x['raw_time'])
     
-    # رأس الجدول (تنسيق بسيط)
-    col_h1, col_h2, col_h3 = st.columns([3, 2, 1])
-    with col_h1: st.markdown(f"**المهمة**")
-    with col_h2: st.markdown(f"**الوقت**")
-    with col_h3: st.markdown(f"**إجراء**")
-    st.markdown("---")
+    # العناوين
+    h1, h2, h3 = st.columns([3, 2, 1])
+    h1.markdown(f"**المهمة**")
+    h2.markdown(f"**التوقيت**")
+    h3.markdown(f"**حذف**")
+    st.divider()
 
-    # عرض الصفوف
+    # عرض المهام
     for task in sorted_tasks:
-        c_name, c_time, c_del = st.columns([3, 2, 1])
-        with c_name:
-            st.markdown(f"**{task['name']}**")
-        with c_time:
+        col_name, col_time, col_del = st.columns([3, 2, 1])
+        with col_name:
+            st.write(task['name'])
+        with col_time:
             st.markdown(f"<span style='color:{clr};'>{task['start']} - {task['end']}</span>", unsafe_allow_html=True)
-        with c_del:
-            # زر الحذف الفردي
+        with col_del:
+            # استخدام المعرف الفريد للمهمة في المفتاح (key)
             if st.button("❌", key=f"btn_{task['id']}"):
                 st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]
                 st.rerun()
-    
-    st.markdown("---")
+
+    st.write("---")
     if st.button("🗑️ مسح الجدول بالكامل"):
         st.session_state.tk = []
         st.rerun()
 else:
-    st.info("لا توجد مهام مضافة حالياً. ابدأ بإضافة مهمة جديدة أعلاه!")
+    st.info("الجدول فارغ حالياً.")
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **فراس حمد المعمري**")

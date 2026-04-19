@@ -28,10 +28,17 @@ st.markdown(f"""
     [data-testid="stSidebar"] {{ background-color: rgba(0,0,0,0.5) !important; backdrop-filter: blur(10px); }}
     h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
     .p-box {{ border: 2px solid {clr}; padding: 15px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); }}
-    .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; }}
-    .task-table {{ width: 100%; border-collapse: collapse; background-color: rgba(0, 0, 0, 0.5); border-radius: 15px; overflow: hidden; border: 1px solid {clr}; }}
-    .task-table th {{ background-color: {clr}; color: black; padding: 15px; }}
-    .task-table td {{ padding: 15px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
+    .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; width: 100%; }}
+    .task-row {{ 
+        background: rgba(255, 255, 255, 0.05); 
+        padding: 15px; 
+        border-radius: 10px; 
+        margin-bottom: 10px; 
+        border-right: 5px solid {clr};
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -58,14 +65,14 @@ if t:
 
 st.divider()
 
-# 7. إدارة المهام (مع كود تنظيف تلقائي)
+# 7. إدارة المهام
 if 'tk' not in st.session_state:
     st.session_state.tk = []
 
-# --- كود الحماية من KeyError ---
+# حماية البيانات وتصفيرها إذا كانت قديمة (KeyError Protection)
 if st.session_state.tk and len(st.session_state.tk) > 0:
     if "raw_time" not in st.session_state.tk[0]:
-        st.session_state.tk = [] # تصفير البيانات القديمة فوراً
+        st.session_state.tk = []
         st.rerun()
 
 st.subheader("📝 أضف مهمة جديدة")
@@ -77,6 +84,7 @@ with st.form("task_form", clear_on_submit=True):
     
     if st.form_submit_button("إضافة ✨") and task_name:
         st.session_state.tk.append({
+            "id": dt.now().timestamp(), # معرف فريد للحذف بدقة
             "name": task_name,
             "start": t_start.strftime("%I:%M %p"),
             "end": t_end.strftime("%I:%M %p"),
@@ -84,20 +92,39 @@ with st.form("task_form", clear_on_submit=True):
         })
         st.rerun()
 
-# 8. عرض الجدول
+# 8. عرض الجدول (مع ميزة الحذف الفردي)
 if st.session_state.tk:
     st.subheader("🕒 جدولك الزمني")
-    df = pd.DataFrame(st.session_state.tk).sort_values(by="raw_time")
     
-    table_html = f'<table class="task-table"><thead><tr><th>المهمة</th><th>الفترة الزمنية</th></tr></thead><tbody>'
-    for _, row in df.iterrows():
-        table_html += f"<tr><td style='font-weight:bold;'>{row['name']}</td><td style='color:{clr};'>{row['start']} - {row['end']}</td></tr>"
-    table_html += "</tbody></table>"
-    st.markdown(table_html, unsafe_allow_html=True)
+    # ترتيب المهام حسب الوقت
+    sorted_tasks = sorted(st.session_state.tk, key=lambda x: x['raw_time'])
     
-    if st.button("🗑️ مسح الكل"):
+    # رأس الجدول (تنسيق بسيط)
+    col_h1, col_h2, col_h3 = st.columns([3, 2, 1])
+    with col_h1: st.markdown(f"**المهمة**")
+    with col_h2: st.markdown(f"**الوقت**")
+    with col_h3: st.markdown(f"**إجراء**")
+    st.markdown("---")
+
+    # عرض الصفوف
+    for task in sorted_tasks:
+        c_name, c_time, c_del = st.columns([3, 2, 1])
+        with c_name:
+            st.markdown(f"**{task['name']}**")
+        with c_time:
+            st.markdown(f"<span style='color:{clr};'>{task['start']} - {task['end']}</span>", unsafe_allow_html=True)
+        with c_del:
+            # زر الحذف الفردي
+            if st.button("❌", key=f"btn_{task['id']}"):
+                st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]
+                st.rerun()
+    
+    st.markdown("---")
+    if st.button("🗑️ مسح الجدول بالكامل"):
         st.session_state.tk = []
         st.rerun()
+else:
+    st.info("لا توجد مهام مضافة حالياً. ابدأ بإضافة مهمة جديدة أعلاه!")
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **فراس حمد المعمري**")

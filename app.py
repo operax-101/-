@@ -60,9 +60,14 @@ st.divider()
 if 'tk' not in st.session_state:
     st.session_state.tk = []
 
+# --- كود الحماية المطور (تنظيف البيانات القديمة التي تسبب KeyError) ---
+if st.session_state.tk:
+    if not all("category" in task for task in st.session_state.tk):
+        st.session_state.tk = []
+        st.rerun()
+
 st.subheader("📝 إضافة مهمة جديدة تحت عنوان رئيسي")
 with st.form("task_form", clear_on_submit=True):
-    # إضافة العنوان الرئيسي
     category = st.text_input("العنوان الرئيسي (مثلاً: المذاكرة، الألعاب):", "عام")
     task_name = st.text_input("اسم المهمة:")
     c1, c2 = st.columns(2)
@@ -82,17 +87,14 @@ with st.form("task_form", clear_on_submit=True):
 
 # 8. عرض الجدول بنظام المجموعات والبطاقات
 if st.session_state.tk:
-    # الحصول على المجموعات الفريدة
+    # استخراج العناوين الفريدة
     categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
     
     for cat in categories:
-        # عرض العنوان الرئيسي
         st.markdown(f'<div class="category-header"><h3>📁 {cat}</h3></div>', unsafe_allow_html=True)
         
-        # تصفية المهام التابعة لهذه المجموعة وترتيبها بالوقت
         cat_tasks = sorted([t for t in st.session_state.tk if t['category'] == cat], key=lambda x: x['raw_time'])
         
-        # عرض مهام المجموعة في أعمدة (4 أعمدة)
         n_cols = 4
         for i in range(0, len(cat_tasks), n_cols):
             batch = cat_tasks[i:i + n_cols]

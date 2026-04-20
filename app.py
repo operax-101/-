@@ -4,7 +4,7 @@ from datetime import datetime as dt, timedelta
 import requests
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="منظم فراس - النسخة الاحترافية", layout="wide", page_icon="📅")
+st.set_page_config(page_title="FIRAS SCHEDULER - النسخة الاحترافية", layout="wide", page_icon="📅")
 
 # 2. قائمة التدرجات
 gradients = {
@@ -39,8 +39,8 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # 5. الواجهة
-st.title("📅 FERAS SCHEDULER")
-st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>إبداع: فراس حمد المعمري</p>", unsafe_allow_html=True)
+st.title("📅 FIRAS SCHEDULER")
+st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>Developed by: FIRAS</p>", unsafe_allow_html=True)
 
 # 6. أوقات الصلاة والإقامة
 city = st.text_input("📍 اكتب المدينة هنا:", "Muscat")
@@ -136,4 +136,4 @@ else:
     st.info("الجدول فارغ حالياً.")
 
 st.sidebar.markdown("---")
-st.sidebar.write(f"المبرمج: **فراس حمد المعمري**")
+st.sidebar.write(f"المبرمج: **FIRAS**")

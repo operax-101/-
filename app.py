@@ -40,7 +40,7 @@ st.markdown(f"""
 
 # 5. الواجهة
 st.title("📅 FIRAS SCHEDULER")
-st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>Developed by: FIRAS</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>إعداد: FIRAS</p>", unsafe_allow_html=True)
 
 # 6. أوقات الصلاة والإقامة
 city = st.text_input("📍 اكتب المدينة هنا:", "Muscat")
@@ -78,7 +78,7 @@ st.divider()
 if 'tk' not in st.session_state:
     st.session_state.tk = []
 
-# تنظيف البيانات القديمة
+# تنظيف البيانات القديمة التي تسبب KeyError
 if st.session_state.tk:
     if not all("category" in task for task in st.session_state.tk):
         st.session_state.tk = []

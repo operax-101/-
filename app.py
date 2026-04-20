@@ -33,7 +33,7 @@ st.markdown(f"""
     h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
     .category-header {{ background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 10px; border-right: 5px solid {clr}; margin-top: 20px; text-align: right; color: white; }}
     .p-box {{ border: 2px solid {clr}; padding: 10px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); min-height: 120px; display: flex; flex-direction: column; justify-content: center; }}
-    .iqama-text {{ font-size: 0.85rem; color: #00FF00; font-weight: bold; margin-top: 5px; opacity: 0.9; }}
+    .iqama-text {{ font-size: 0.85rem; color: #ffffff !important; font-weight: bold; margin-top: 5px; opacity: 0.9; }}
     .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; width: 100%; }}
 </style>
 """, unsafe_allow_html=True)

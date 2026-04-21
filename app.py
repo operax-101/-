@@ -38,12 +38,23 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab-list"] {{ gap: 10px; justify-content: center; }}
     .stTabs [data-baseweb="tab"] {{ background-color: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 20px; color: white; }}
     .stTabs [aria-selected="true"] {{ background-color: {clr}33 !important; border-bottom: 2px solid {clr} !important; }}
+    .advice-box {{ font-size: 0.9rem; margin-top: 8px; padding: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); }}
 </style>
 """, unsafe_allow_html=True)
 
 # 5. تهيئة مخزن البيانات (Session State)
 if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
+
+# دالة لجلب العبارات (نفس المنطق في التبويبات والصفحة الرئيسية)
+def get_habit_message(habit):
+    if habit['status'] is True:
+        if habit['type'] == 'good': return "✅ بطل! استمر في هذا الإنجاز. 🌟"
+        else: return "⚠️ لا بأس، حاول غداً أن تكون أقوى. 👊"
+    elif habit['status'] is False:
+        if habit['type'] == 'good': return "💡 تذكر لماذا بدأت، حاول الآن! 🔥"
+        else: return "✨ إنجاز عظيم! انتصرت على نفسك اليوم. 🌟"
+    return None
 
 # العنوان الرئيسي
 st.title("📅 FIRAS SCHEDULER")
@@ -54,27 +65,48 @@ tab_home, tab_full, tab_habits = st.tabs(["🏠 الرئيسية", "📑 الج�
 
 # --- التبويب الأول: الرئيسية ---
 with tab_home:
-    st.subheader("🚀 نظرة سريعة")
-    if st.session_state.tk:
-        now_str = dt.now().strftime("%H:%M")
-        categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
-        for cat in categories:
-            cat_tasks = sorted([t for t in st.session_state.tk if t['category'] == cat], key=lambda x: x['raw_time'])
-            next_task = next((t for t in cat_tasks if t['raw_time'] >= now_str), cat_tasks[0] if cat_tasks else None)
-            st.markdown(f"""
-            <div style="border-right: 5px solid {clr}; padding: 15px; background: rgba(255,255,255,0.07); border-radius: 12px; margin-bottom: 10px;">
-                <span style="color:{clr}; font-weight:bold;">📁 {cat}</span><br>
-                <span style="color:white; font-size:1.1rem;">المهمة القادمة: <b>{next_task['name'] if next_task else 'لا يوجد'}</b></span>
-                <span style="float:left; color:{clr};">{next_task['start'] if next_task else ''}</span>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("الجدول فارغ. ابدأ بإضافة المهام من تبويب 'الجدول'.")
+    col_sched, col_habit_mini = st.columns([2, 1])
+    
+    with col_sched:
+        st.subheader("🚀 المهام القادمة")
+        if st.session_state.tk:
+            now_str = dt.now().strftime("%H:%M")
+            categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
+            for cat in categories:
+                cat_tasks = sorted([t for t in st.session_state.tk if t['category'] == cat], key=lambda x: x['raw_time'])
+                next_task = next((t for t in cat_tasks if t['raw_time'] >= now_str), cat_tasks[0] if cat_tasks else None)
+                st.markdown(f"""
+                <div style="border-right: 5px solid {clr}; padding: 15px; background: rgba(255,255,255,0.07); border-radius: 12px; margin-bottom: 10px;">
+                    <span style="color:{clr}; font-weight:bold;">📁 {cat}</span><br>
+                    <span style="color:white; font-size:1.1rem;">المهمة القادمة: <b>{next_task['name'] if next_task else 'لا يوجد'}</b></span>
+                    <span style="float:left; color:{clr};">{next_task['start'] if next_task else ''}</span>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("لا توجد مهام.")
+
+    with col_habit_mini:
+        st.subheader("🎯 أهم العادات")
+        if st.session_state.habits:
+            # عرض أول عادتين فقط
+            for i, habit in enumerate(st.session_state.habits[:2]):
+                msg = get_habit_message(habit)
+                card_border = clr if habit['type'] == 'good' else "#ff4b4b"
+                st.markdown(f"""
+                <div style="border: 1px solid {card_border}66; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.3); margin-bottom: 10px;">
+                    <div style="color:{card_border}; font-weight:bold; font-size:1rem;">{habit['name']}</div>
+                    <div style="color:white; font-size:0.85rem; margin-top:5px;">
+                        {msg if msg else "لم يتم التقييم بعد ⏳"}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.write("أضف عاداتك لتظهر هنا")
 
 # --- التبويب الثاني: الجدول والصلوات ---
 with tab_full:
     # أوقات الصلاة
-    city = st.text_input("📍 المدينة (أوقات الصلاة):", "Muscat")
+    city = st.text_input("📍 المدينة:", "Muscat")
     @st.cache_data(ttl=3600)
     def get_prayer_times(c):
         try:
@@ -96,7 +128,7 @@ with tab_full:
     # نموذج إضافة مهمة
     with st.expander("➕ إضافة مهمة جديدة"):
         with st.form("task_form", clear_on_submit=True):
-            c_cat = st.text_input("الفئة (مثلاً: دراسة، ألعاب):", "عام")
+            c_cat = st.text_input("الفئة:", "عام")
             c_name = st.text_input("اسم المهمة:")
             c1, c2 = st.columns(2)
             t_s = c1.time_input("البداية")
@@ -105,7 +137,6 @@ with tab_full:
                 st.session_state.tk.append({"id": str(dt.now().timestamp()), "category": c_cat, "name": c_name, "start": t_s.strftime("%I:%M %p"), "end": t_e.strftime("%I:%M %p"), "raw_time": t_s.strftime("%H:%M")})
                 st.rerun()
 
-    # عرض المهام
     if st.session_state.tk:
         categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
         for cat in categories:
@@ -122,18 +153,14 @@ with tab_full:
 # --- التبويب الثالث: متتبع العادات ---
 with tab_habits:
     st.subheader("🎯 متتبع العادات اليومي")
-    
-    # إضافة عادة
-    with st.expander("➕ أضف عادة جديدة لتتبعها"):
+    with st.expander("➕ أضف عادة جديدة"):
         with st.form("habit_form", clear_on_submit=True):
             h_name = st.text_input("اسم العادة:")
-            h_type = st.radio("نوع العادة:", ["عادة جيدة (أريد فعلها) ✨", "عادة سيئة (أريد تركها) ⚠️"], horizontal=True)
-            if st.form_submit_button("إضافة للمتتبع"):
+            h_type = st.radio("نوع العادة:", ["جيدة ✨", "سيئة ⚠️"], horizontal=True)
+            if st.form_submit_button("إضافة"):
                 if h_name:
                     st.session_state.habits.append({"name": h_name, "type": "good" if "جيدة" in h_type else "bad", "status": None})
                     st.rerun()
-
-    st.divider()
 
     if st.session_state.habits:
         h_cols = st.columns(2)
@@ -142,7 +169,6 @@ with tab_habits:
                 card_clr = clr if habit['type'] == 'good' else "#ff4b4b"
                 st.markdown(f"""<div class="habit-card" style="border-top: 4px solid {card_clr};">
                     <h4 style="margin:0;">{habit['name']}</h4>
-                    <small style="color:{card_clr};">{"إيجابية" if habit['type'] == 'good' else "سلبية"}</small>
                 </div>""", unsafe_allow_html=True)
                 
                 b1, b2, b3 = st.columns([1,1,1])
@@ -152,20 +178,15 @@ with tab_habits:
                     st.session_state.habits.pop(i)
                     st.rerun()
 
-                # نظام النصائح والتشجيع
-                if habit['status'] is True:
-                    if habit['type'] == 'good': st.success("بطل! استمر في هذا الإنجاز. 🌟")
-                    else: st.warning("لا بأس، حاول غداً أن تكون أقوى من العادة. 👊")
-                elif habit['status'] is False:
-                    if habit['type'] == 'good': st.info("تذكر لماذا بدأت، حاول القيام بها الآن ولو لدقيقتين! 💡")
-                    else: st.success("إنجاز عظيم! ابتعادك عن العادات السيئة هو أكبر استثمار في نفسك. 🔥")
-    else:
-        st.info("ابدأ بإضافة أول عادة لك اليوم!")
-
-    if st.button("🔄 إعادة ضبط اليوم (تصفير الاختيارات)"):
+                msg = get_habit_message(habit)
+                if msg:
+                    if "✅" in msg or "✨" in msg: st.success(msg)
+                    elif "⚠️" in msg: st.warning(msg)
+                    else: st.info(msg)
+    
+    if st.button("🔄 تصفير التتبع لليوم الجديد"):
         for h in st.session_state.habits: h['status'] = None
         st.rerun()
 
-# التذييل في السايدبار
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.1</b><br>Enjoy your productivity!</div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.2</b></div>", unsafe_allow_html=True)

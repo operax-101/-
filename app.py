@@ -46,6 +46,7 @@ st.markdown(f"""
 # 5. تهيئة مخزن البيانات (Session State)
 if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
+if 'notes' not in st.session_state: st.session_state.notes = ""  # تهيئة مخزن الملاحظات
 
 def get_habit_message(habit):
     if habit['status'] is True:
@@ -60,7 +61,7 @@ def get_habit_message(habit):
 st.title("📅 FIRAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr}; letter-spacing: 2px;'>CREATED BY: FIRAS</p>", unsafe_allow_html=True)
 
-# 6. نظام التبويبات (تم إضافة تبويب الدراسة)
+# 6. نظام التبويبات
 tab_home, tab_study, tab_full, tab_habits = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات"])
 
 # --- التبويب الجديد: جلسة الدراسة (Pomodoro) ---
@@ -95,7 +96,9 @@ with tab_study:
 
 # --- التبويب الأول: الرئيسية ---
 with tab_home:
-    col_sched, col_habit_mini = st.columns([2, 1])
+    # تقسيم الصفحة لثلاثة أعمدة ليشمل الملاحظات
+    col_sched, col_habit_mini, col_notes = st.columns([1.5, 1, 1])
+    
     with col_sched:
         st.subheader("🚀 المهام القادمة")
         if st.session_state.tk:
@@ -126,6 +129,11 @@ with tab_home:
                     <div style="color:white; font-size:0.85rem; margin-top:5px;">{msg if msg else "لم يتم التقييم بعد ⏳"}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+    with col_notes:
+        st.subheader("📝 ملاحظات")
+        # خانة الملاحظات مع حفظ الحالة
+        st.session_state.notes = st.text_area("أفكار اليوم:", value=st.session_state.notes, height=250, placeholder="اكتب هنا...")
 
 # --- التبويب الثاني: الجدول والصلوات ---
 with tab_full:

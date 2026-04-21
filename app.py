@@ -33,49 +33,55 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# 5. منطق تحليل العادات (الذكاء الاصطناعي المبسط)
+# 5. منطق تحليل العادات الذكي
 def analyze_habit(name):
-    bad_keywords = ['سهر', 'تدخين', 'اكل سريع', 'غضب', 'تأجيل', 'تسويف', 'جوال', 'تلفون', 'حلويات', 'سكر']
-    good_keywords = ['صلاة', 'رياضة', 'قراءة', 'ماء', 'تعلم', 'برمجة', 'استيقاظ', 'مذاكرة', 'تطوير', 'نوم مبكر']
+    # كلمات مفتاحية ذكية
+    bad_keywords = ['سهر', 'تدخين', 'اكل سريع', 'غضب', 'تأجيل', 'تسويف', 'جوال', 'تلفون', 'حلويات', 'سكر', 'كسل']
     
-    # التحليل
+    # تحليل هل هي عادة سيئة؟
     is_bad = any(word in name.lower() for word in bad_keywords)
     
-    # نصائح وتشيجهات مخصصة
     if is_bad:
         return {
             "type": "سيئة 👎",
-            "on_success": "انتصار كبير! تجنب هذه العادة يقوي إرادتك ويحسن صحتك النفسية.",
-            "on_fail": f"تذكر أن ' {name} ' يستنزف طاقتك. حاول غداً تقليل الوقت الذي تقضيه فيها بمقدار 10 دقائق فقط كبداية."
+            "on_success": f"انتصار كبير! تجنب ' {name} ' يقوي إرادتك ويحسن صحتك.",
+            "on_fail": f"تذكر أن ' {name} ' يؤثر عليك سلباً. حاول غداً أن تقلل منها تدريجياً."
         }
     else:
         return {
             "type": "حسنة 👍",
-            "on_success": f"استمر! ' {name} ' هي استثمار في نفسك، والنتائج ستظهر قريباً جداً.",
-            "on_fail": "لا بأس بالعثرات. السر في الاستمرارية وليس الكمال. حاول القيام بها ولو لدقيقة واحدة الآن!"
+            "on_success": f"استمر يا بطل! ' {name} ' هي طريقك للتميز والنجاح.",
+            "on_fail": f"لا بأس، العثرات طبيعية. حاول القيام بـ ' {name} ' ولو بشكل بسيط الآن!"
         }
 
-# --- إدارة الحالة ---
+# --- إدارة الحالة وتجنب الـ KeyError ---
+if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
+
+# حماية من البيانات القديمة (تصفير العادات إذا كانت بتنسيق قديم)
+if st.session_state.habits and "info" not in st.session_state.habits[0]:
+    st.session_state.habits = []
+    st.rerun()
 
 # --- واجهة المستخدم ---
 st.title("📅 FIRAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr};'>تطوير: FIRAS</p>", unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["🏠 الرئيسية", "📑 الجدول", "🚀 متتبع العادات الذكي"])
+tab_home, tab_full, tab_habits = st.tabs(["🏠 الرئيسية", "📑 الجدول والصلوات", "🚀 متتبع العادات الذكي"])
 
-with tab3:
-    st.subheader("🤖 محلل العادات الذكي")
-    with st.expander("➕ أضف عادة (سيقوم الذكاء الاصطناعي بتحليلها)"):
+with tab_habits:
+    st.subheader("🤖 محلل العادات بالذكاء الاصطناعي")
+    
+    with st.expander("➕ أضف عادة جديدة (اكتب اسمها فقط)"):
         with st.form("h_form", clear_on_submit=True):
-            h_input = st.text_input("ما هي العادة التي تريد تتبعها؟")
-            if st.form_submit_button("إضافة وتحليل"):
+            h_input = st.text_input("مثلاً: سهر، صلاة، برمجة، تدخين..")
+            if st.form_submit_button("إضافة وتحليل ✨"):
                 if h_input:
                     analysis = analyze_habit(h_input)
                     st.session_state.habits.append({
                         "id": str(dt.now().timestamp()),
                         "name": h_input,
-                        "info": analysis,
+                        "info": analysis, # هنا يتم تخزين التحليل
                         "status": None
                     })
                     st.rerun()
@@ -89,17 +95,22 @@ with tab3:
             """, unsafe_allow_html=True)
             
             c1, c2 = st.columns(2)
-            if c1.button("✅ تم بنجاح", key=f"y_{habit['id']}"): habit['status'] = True
-            if c2.button("❌ لم أنجح", key=f"n_{habit['id']}"): habit['status'] = False
+            if c1.button("✅ تم / تجنبتها", key=f"y_{habit['id']}"): 
+                habit['status'] = True
+            if c2.button("❌ فشلت / وقعت فيها", key=f"n_{habit['id']}"): 
+                habit['status'] = False
             
             if habit['status'] is True:
                 st.success(habit['info']['on_success'])
             elif habit['status'] is False:
                 st.warning(habit['info']['on_fail'])
             
-            if st.button("🗑️ حذف", key=f"d_{habit['id']}"):
-                st.session_state.habits.pop(i); st.rerun()
+            if st.button("🗑️ حذف العادة", key=f"d_{habit['id']}"):
+                st.session_state.habits.pop(i)
+                st.rerun()
                 
             st.markdown('</div></div>', unsafe_allow_html=True)
     else:
-        st.info("أضف عادة مثل 'قراءة' أو 'سهر' لترى تحليل الذكاء الاصطناعي.")
+        st.info("اكتب أي عادة وسأقوم بتحليلها لك فوراً!")
+
+# (باقي كود الجدولة والصلوات يوضع هنا كما هو في النسخ السابقة)

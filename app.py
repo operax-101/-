@@ -34,10 +34,9 @@ st.markdown(f"""
     h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
     .category-header {{ background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 10px; border-right: 5px solid {clr}; margin-top: 20px; text-align: right; color: white; }}
     .p-box {{ border: 2px solid {clr}; padding: 10px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); min-height: 120px; display: flex; flex-direction: column; justify-content: center; }}
-    .habit-card {{ background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid {clr}; margin-bottom: 10px; }}
+    .habit-card {{ background: rgba(0, 0, 0, 0.4); padding: 20px; border-radius: 15px; border: 2px solid {clr}; margin-bottom: 20px; }}
     .home-box {{ border-left: 5px solid {clr}; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 10px; }}
     .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; width: 100%; }}
-    .stTabs [data-baseweb="tab-list"] {{ gap: 20px; justify-content: center; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,7 +48,7 @@ st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-w
 if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
 
-# --- 6. نظام التبويبات الجديد ---
+# --- 6. نظام التبويبات ---
 tab_home, tab_full, tab_habits = st.tabs(["🏠 الرئيسية", "📑 الجدول والصلوات", "🚀 متتبع العادات"])
 
 # --- تبويب الرئيسية ---
@@ -97,51 +96,48 @@ with tab_full:
         if st.button(f"❌ حذف {task['name']}", key=task['id']):
             st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]; st.rerun()
 
-# --- تبويب متتبع العادات (الجديد) ---
+# --- تبويب متتبع العادات (تم إصلاح مكان الصندوق) ---
 with tab_habits:
     st.subheader("💪 متتبع العادات الذكي")
     
-    # نموذج إضافة عادة
     with st.expander("➕ أضف عادة جديدة لتتبعها"):
-        with st.form("habit_form"):
-            h_name = st.text_input("اسم العادة (مثلاً: القراءة، شرب الماء، ترك السهر):")
+        with st.form("habit_form", clear_on_submit=True):
+            h_name = st.text_input("اسم العادة:")
             h_type = st.radio("نوع العادة:", ["عادة حسنة 👍", "عادة سيئة 👎"], horizontal=True)
-            if st.form_submit_button("إضافة العادة"):
+            if st.form_submit_button("إضافة"):
                 if h_name:
                     st.session_state.habits.append({"id": str(dt.now().timestamp()), "name": h_name, "type": h_type, "status": None})
                     st.rerun()
 
-    # عرض العادات
     if st.session_state.habits:
         for i, habit in enumerate(st.session_state.habits):
-            with st.container():
-                st.markdown(f'<div class="habit-card">', unsafe_allow_html=True)
-                col_h1, col_h2, col_h3 = st.columns([2, 1, 1])
-                col_h1.write(f"**{habit['name']}** ({habit['type']})")
+            # بداية الصندوق (Card)
+            st.markdown(f'<div class="habit-card">', unsafe_allow_html=True)
+            
+            st.write(f"### {habit['name']} ({habit['type']})")
+            col_h1, col_h2 = st.columns(2)
+            
+            if col_h1.button("✅ سويتها / تجنبتها", key=f"yes_{habit['id']}"):
+                habit['status'] = True
+            if col_h2.button("❌ ما سويتها / وقعت فيها", key=f"no_{habit['id']}"):
+                habit['status'] = False
+            
+            # عرض الرسائل داخل الصندوق
+            if habit['status'] is True:
+                msg = "بطل! استمر في الإنجاز ✨" if habit['type'] == "عادة حسنة 👍" else "قوة إرادة حديدية! 💎"
+                st.success(msg)
+            elif habit['status'] is False:
+                msg = "نصيحة: ابدأ بصغير! حاول فعل جزء بسيط منها الآن." if habit['type'] == "عادة حسنة 👍" else "لا بأس، تذكر لماذا أردت تركها وحاول مجدداً!"
+                st.info(msg)
+            
+            if st.button("🗑️ حذف هذه العادة", key=f"del_h_{habit['id']}"):
+                st.session_state.habits.pop(i)
+                st.rerun()
                 
-                # أزرار الفعل
-                if col_h2.button("✅ سويتها / تجنبتها", key=f"yes_{habit['id']}"):
-                    habit['status'] = True
-                if col_h3.button("❌ ما سويتها / وقعت فيها", key=f"no_{habit['id']}"):
-                    habit['status'] = False
-                
-                # منطق الرسائل التشجيعية والنصائح
-                if habit['status'] is True:
-                    if habit['type'] == "عادة حسنة 👍":
-                        st.success(random.choice(["بطل! استمر في الإنجاز ✨", "أنت تصنع مستقبلك الآن! 🚀", "فخور بك يا FIRAS!"]))
-                    else:
-                        st.success(random.choice(["قوة إرادة حديدية! 💎", "عظيم.. السيطرة على النفس هي الفوز الحقيقي", "استمر في المقاومة!"]))
-                elif habit['status'] is False:
-                    if habit['type'] == "عادة حسنة 👍":
-                        st.warning("نصيحة: ابدأ بصغير! إذا لم تستطع فعلها كاملة، افعل جزءاً بسيطاً منها الآن.")
-                    else:
-                        st.error("لا بأس، العثرات جزء من الطريق. تذكر لماذا أردت تركها وحاول مجدداً الآن!")
-                
-                if st.button("🗑️ حذف العادة", key=f"del_h_{habit['id']}"):
-                    st.session_state.habits.pop(i); st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+            # نهاية الصندوق
+            st.markdown('</div>', unsafe_allow_html=True)
     else:
-        st.info("لم تضف أي عادات بعد. ابدأ اليوم بتغيير حياتك!")
+        st.info("ابدأ بإضافة أول عادة لك!")
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **FIRAS**")

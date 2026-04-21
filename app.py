@@ -40,13 +40,14 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] {{ background-color: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 20px; color: white; }}
     .stTabs [aria-selected="true"] {{ background-color: {clr}33 !important; border-bottom: 2px solid {clr} !important; }}
     .timer-display {{ font-size: 4rem; font-weight: bold; color: {clr}; text-align: center; font-family: monospace; text-shadow: 0 0 20px {clr}55; }}
+    .sticky-note {{ background: rgba(255, 255, 255, 0.05); border-right: 4px solid {clr}; padding: 15px; border-radius: 10px; color: white; white-space: pre-wrap; }}
 </style>
 """, unsafe_allow_html=True)
 
 # 5. تهيئة مخزن البيانات (Session State)
 if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
-if 'notes' not in st.session_state: st.session_state.notes = ""  # تهيئة مخزن الملاحظات
+if 'notes_content' not in st.session_state: st.session_state.notes_content = ""
 
 def get_habit_message(habit):
     if habit['status'] is True:
@@ -61,44 +62,12 @@ def get_habit_message(habit):
 st.title("📅 FIRAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr}; letter-spacing: 2px;'>CREATED BY: FIRAS</p>", unsafe_allow_html=True)
 
-# 6. نظام التبويبات
-tab_home, tab_study, tab_full, tab_habits = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات"])
+# 6. نظام التبويبات المحدث
+tab_home, tab_study, tab_full, tab_habits, tab_notes = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات", "📝 الملاحظات"])
 
-# --- التبويب الجديد: جلسة الدراسة (Pomodoro) ---
-with tab_study:
-    st.subheader("⏱️ مؤقت التركيز (بومودورو)")
-    
-    col_input1, col_input2 = st.columns(2)
-    study_mins = col_input1.number_input("دقائق الدراسة:", min_value=1, max_value=120, value=25)
-    break_mins = col_input2.number_input("دقائق الراحة:", min_value=1, max_value=30, value=5)
-    
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        placeholder = st.empty()
-        progress_bar = st.progress(0)
-        
-        mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
-        
-        if st.button("ابدأ التوقيت الآن 🚀"):
-            total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
-            remaining = total_seconds
-            
-            while remaining > 0:
-                mins, secs = divmod(remaining, 60)
-                placeholder.markdown(f'<div class="timer-display">{mins:02d}:{secs:02d}</div>', unsafe_allow_html=True)
-                progress_bar.progress(1 - (remaining / total_seconds))
-                time.sleep(1)
-                remaining -= 1
-            
-            st.balloons()
-            st.success("انتهى الوقت! خذ قسطاً من الراحة أو عد للدراسة." if "دراسة" in mode else "انتهت الراحة! لنعد للعمل.")
-            placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
-
-# --- التبويب الأول: الرئيسية ---
+# --- التبويب الأول: الرئيسية (تم ربط الملاحظات هنا) ---
 with tab_home:
-    # تقسيم الصفحة لثلاثة أعمدة ليشمل الملاحظات
-    col_sched, col_habit_mini, col_notes = st.columns([1.5, 1, 1])
-    
+    col_sched, col_side = st.columns([2, 1])
     with col_sched:
         st.subheader("🚀 المهام القادمة")
         if st.session_state.tk:
@@ -117,8 +86,16 @@ with tab_home:
         else:
             st.info("لا توجد مهام.")
 
-    with col_habit_mini:
-        st.subheader("🎯 أهم العادات")
+    with col_side:
+        # عرض الملاحظات المثبتة في الرئيسية
+        st.subheader("📌 ملاحظات مثبتة")
+        if st.session_state.notes_content.strip():
+            st.markdown(f'<div class="sticky-note">{st.session_state.notes_content}</div>', unsafe_allow_html=True)
+        else:
+            st.info("لا توجد ملاحظات مثبتة حالياً.")
+        
+        st.divider()
+        st.subheader("🎯 العادات")
         if st.session_state.habits:
             for i, habit in enumerate(st.session_state.habits[:2]):
                 msg = get_habit_message(habit)
@@ -130,12 +107,43 @@ with tab_home:
                 </div>
                 """, unsafe_allow_html=True)
 
-    with col_notes:
-        st.subheader("📝 ملاحظات")
-        # خانة الملاحظات مع حفظ الحالة
-        st.session_state.notes = st.text_area("أفكار اليوم:", value=st.session_state.notes, height=250, placeholder="اكتب هنا...")
+# --- التبويب الجديد: الملاحظات (هنا تكتب الملاحظات لتظهر في الرئيسي) ---
+with tab_notes:
+    st.subheader("📝 دفتر الملاحظات")
+    st.markdown("ما تكتبه هنا سيظهر تلقائياً في التبويب الرئيسي كـ **ملاحظات مثبتة**.")
+    # ربط المدخلات بمخزن البيانات
+    st.session_state.notes_content = st.text_area("اكتب ملاحظاتك، أهدافك، أو تذكيراتك هنا:", 
+                                               value=st.session_state.notes_content, 
+                                               height=400,
+                                               placeholder="مثال: مراجعة فصل الكيمياء غداً...")
+    if st.button("حفظ وتحديث 💾"):
+        st.success("تم تثبيت الملاحظات بنجاح!")
+        st.rerun()
 
-# --- التبويب الثاني: الجدول والصلوات ---
+# --- بقية التبويبات (بدون تغيير حرصاً على الكود الأصلي) ---
+with tab_study:
+    st.subheader("⏱️ مؤقت التركيز (بومودورو)")
+    col_input1, col_input2 = st.columns(2)
+    study_mins = col_input1.number_input("دقائق الدراسة:", min_value=1, max_value=120, value=25)
+    break_mins = col_input2.number_input("دقائق الراحة:", min_value=1, max_value=30, value=5)
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        placeholder = st.empty()
+        progress_bar = st.progress(0)
+        mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
+        if st.button("ابدأ التوقيت الآن 🚀"):
+            total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
+            remaining = total_seconds
+            while remaining > 0:
+                mins, secs = divmod(remaining, 60)
+                placeholder.markdown(f'<div class="timer-display">{mins:02d}:{secs:02d}</div>', unsafe_allow_html=True)
+                progress_bar.progress(1 - (remaining / total_seconds))
+                time.sleep(1)
+                remaining -= 1
+            st.balloons()
+            st.success("انتهى الوقت!")
+            placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
+
 with tab_full:
     city = st.text_input("📍 المدينة:", "Muscat")
     @st.cache_data(ttl=3600)
@@ -144,7 +152,6 @@ with tab_full:
             r = requests.get(f"http://api.aladhan.com/v1/timingsByCity?city={c}&country=Oman&method=4").json()
             return r['data']['timings']
         except: return None
-
     t_data = get_prayer_times(city)
     if t_data:
         p_names = {"Fajr":"الفجر","Dhuhr":"الظهر","Asr":"العصر","Maghrib":"المغرب","Isha":"العشاء"}
@@ -153,7 +160,6 @@ with tab_full:
             azan_dt = dt.strptime(t_data[k], "%H:%M")
             iqama_dt = azan_dt + timedelta(minutes=iqama_offset)
             cols[i].markdown(f"""<div class="p-box"><b style="color:{clr};">{v}</b><br>{azan_dt.strftime("%I:%M %p")}<br><small style="opacity:0.7;">إقامة: {iqama_dt.strftime("%I:%M %p")}</small></div>""", unsafe_allow_html=True)
-
     st.divider()
     with st.expander("➕ إضافة مهمة جديدة"):
         with st.form("task_form", clear_on_submit=True):
@@ -165,7 +171,6 @@ with tab_full:
             if st.form_submit_button("إضافة ✅") and c_name:
                 st.session_state.tk.append({"id": str(dt.now().timestamp()), "category": c_cat, "name": c_name, "start": t_s.strftime("%I:%M %p"), "end": t_e.strftime("%I:%M %p"), "raw_time": t_s.strftime("%H:%M")})
                 st.rerun()
-
     if st.session_state.tk:
         categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
         for cat in categories:
@@ -179,7 +184,6 @@ with tab_full:
                         st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]
                         st.rerun()
 
-# --- التبويب الثالث: متتبع العادات ---
 with tab_habits:
     st.subheader("🎯 متتبع العادات اليومي")
     with st.expander("➕ أضف عادة جديدة"):
@@ -190,7 +194,6 @@ with tab_habits:
                 if h_name:
                     st.session_state.habits.append({"name": h_name, "type": "good" if "جيدة" in h_type else "bad", "status": None})
                     st.rerun()
-
     if st.session_state.habits:
         h_cols = st.columns(2)
         for i, habit in enumerate(st.session_state.habits):
@@ -207,10 +210,9 @@ with tab_habits:
                     st.rerun()
                 msg = get_habit_message(habit)
                 if msg: st.info(msg)
-    
     if st.button("🔄 تصفير التتبع لليوم الجديد"):
         for h in st.session_state.habits: h['status'] = None
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.3</b></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.4</b></div>", unsafe_allow_html=True)

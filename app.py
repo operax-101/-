@@ -3,7 +3,6 @@ import pandas as pd
 from datetime import datetime as dt, timedelta
 import requests
 import time
-from streamlit_drawable_canvas import st_canvas # تحتاج تثبيت: pip install streamlit-drawable-canvas
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="FIRAS SCHEDULER", layout="wide", page_icon="📅")
@@ -47,7 +46,6 @@ st.markdown(f"""
 # 5. تهيئة مخزن البيانات (Session State)
 if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
-if 'notes' not in st.session_state: st.session_state.notes = ""
 
 def get_habit_message(habit):
     if habit['status'] is True:
@@ -62,34 +60,38 @@ def get_habit_message(habit):
 st.title("📅 FIRAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr}; letter-spacing: 2px;'>CREATED BY: FIRAS</p>", unsafe_allow_html=True)
 
-# 6. نظام التبويبات (إضافة تبويب الملاحظات والبورد في البداية)
-tab_notes, tab_home, tab_study, tab_full, tab_habits = st.tabs(["📝 الملاحظات والبورد", "🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات"])
+# 6. نظام التبويبات (تم إضافة تبويب الدراسة)
+tab_home, tab_study, tab_full, tab_habits = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات"])
 
-# --- التبويب الجديد: الملاحظات والبورد ---
-with tab_notes:
-    col_text, col_draw = st.columns([1, 2])
+# --- التبويب الجديد: جلسة الدراسة (Pomodoro) ---
+with tab_study:
+    st.subheader("⏱️ مؤقت التركيز (بومودورو)")
     
-    with col_text:
-        st.subheader("📝 ملاحظات سريعة")
-        st.session_state.notes = st.text_area("اكتب أفكارك هنا...", value=st.session_state.notes, height=450)
-        if st.button("حفظ الملاحظات 💾"):
-            st.success("تم الحفظ في الجلسة!")
-
-    with col_draw:
-        st.subheader("🎨 بورد الرسم والأفكار")
-        st.markdown(f'<p style="color:{clr}; font-size:0.8rem;">استخدم الماوس للرسم أو التخطيط</p>', unsafe_allow_html=True)
+    col_input1, col_input2 = st.columns(2)
+    study_mins = col_input1.number_input("دقائق الدراسة:", min_value=1, max_value=120, value=25)
+    break_mins = col_input2.number_input("دقائق الراحة:", min_value=1, max_value=30, value=5)
+    
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        placeholder = st.empty()
+        progress_bar = st.progress(0)
         
-        # إعدادات الكانفاس (اللوحة)
-        canvas_result = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",
-            stroke_width=3,
-            stroke_color=clr,
-            background_color="#1a1a1a",
-            height=400,
-            drawing_mode="freedraw",
-            key="canvas",
-        )
-        st.info("اللوحة تُستخدم للتوضيح السريع للأفكار.")
+        mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
+        
+        if st.button("ابدأ التوقيت الآن 🚀"):
+            total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
+            remaining = total_seconds
+            
+            while remaining > 0:
+                mins, secs = divmod(remaining, 60)
+                placeholder.markdown(f'<div class="timer-display">{mins:02d}:{secs:02d}</div>', unsafe_allow_html=True)
+                progress_bar.progress(1 - (remaining / total_seconds))
+                time.sleep(1)
+                remaining -= 1
+            
+            st.balloons()
+            st.success("انتهى الوقت! خذ قسطاً من الراحة أو عد للدراسة." if "دراسة" in mode else "انتهت الراحة! لنعد للعمل.")
+            placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
 
 # --- التبويب الأول: الرئيسية ---
 with tab_home:
@@ -125,31 +127,7 @@ with tab_home:
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- التبويب الثاني: جلسة الدراسة (Pomodoro) ---
-with tab_study:
-    st.subheader("⏱️ مؤقت التركيز (بومودورو)")
-    col_input1, col_input2 = st.columns(2)
-    study_mins = col_input1.number_input("دقائق الدراسة:", min_value=1, max_value=120, value=25)
-    break_mins = col_input2.number_input("دقائق الراحة:", min_value=1, max_value=30, value=5)
-    
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        placeholder = st.empty()
-        progress_bar = st.progress(0)
-        mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
-        if st.button("ابدأ التوقيت الآن 🚀"):
-            total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
-            remaining = total_seconds
-            while remaining > 0:
-                mins, secs = divmod(remaining, 60)
-                placeholder.markdown(f'<div class="timer-display">{mins:02d}:{secs:02d}</div>', unsafe_allow_html=True)
-                progress_bar.progress(1 - (remaining / total_seconds))
-                time.sleep(1)
-                remaining -= 1
-            st.balloons()
-            st.success("انتهى الوقت!")
-
-# --- التبويب الثالث: الجدول والصلوات ---
+# --- التبويب الثاني: الجدول والصلوات ---
 with tab_full:
     city = st.text_input("📍 المدينة:", "Muscat")
     @st.cache_data(ttl=3600)
@@ -158,6 +136,7 @@ with tab_full:
             r = requests.get(f"http://api.aladhan.com/v1/timingsByCity?city={c}&country=Oman&method=4").json()
             return r['data']['timings']
         except: return None
+
     t_data = get_prayer_times(city)
     if t_data:
         p_names = {"Fajr":"الفجر","Dhuhr":"الظهر","Asr":"العصر","Maghrib":"المغرب","Isha":"العشاء"}
@@ -166,6 +145,7 @@ with tab_full:
             azan_dt = dt.strptime(t_data[k], "%H:%M")
             iqama_dt = azan_dt + timedelta(minutes=iqama_offset)
             cols[i].markdown(f"""<div class="p-box"><b style="color:{clr};">{v}</b><br>{azan_dt.strftime("%I:%M %p")}<br><small style="opacity:0.7;">إقامة: {iqama_dt.strftime("%I:%M %p")}</small></div>""", unsafe_allow_html=True)
+
     st.divider()
     with st.expander("➕ إضافة مهمة جديدة"):
         with st.form("task_form", clear_on_submit=True):
@@ -177,6 +157,7 @@ with tab_full:
             if st.form_submit_button("إضافة ✅") and c_name:
                 st.session_state.tk.append({"id": str(dt.now().timestamp()), "category": c_cat, "name": c_name, "start": t_s.strftime("%I:%M %p"), "end": t_e.strftime("%I:%M %p"), "raw_time": t_s.strftime("%H:%M")})
                 st.rerun()
+
     if st.session_state.tk:
         categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
         for cat in categories:
@@ -190,7 +171,7 @@ with tab_full:
                         st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]
                         st.rerun()
 
-# --- التبويب الرابع: متتبع العادات ---
+# --- التبويب الثالث: متتبع العادات ---
 with tab_habits:
     st.subheader("🎯 متتبع العادات اليومي")
     with st.expander("➕ أضف عادة جديدة"):
@@ -201,6 +182,7 @@ with tab_habits:
                 if h_name:
                     st.session_state.habits.append({"name": h_name, "type": "good" if "جيدة" in h_type else "bad", "status": None})
                     st.rerun()
+
     if st.session_state.habits:
         h_cols = st.columns(2)
         for i, habit in enumerate(st.session_state.habits):
@@ -217,9 +199,10 @@ with tab_habits:
                     st.rerun()
                 msg = get_habit_message(habit)
                 if msg: st.info(msg)
+    
     if st.button("🔄 تصفير التتبع لليوم الجديد"):
         for h in st.session_state.habits: h['status'] = None
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.4</b></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.3</b></div>", unsafe_allow_html=True)

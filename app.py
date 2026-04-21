@@ -4,7 +4,7 @@ from datetime import datetime as dt, timedelta
 import requests
 
 # 1. إعدادات الصفحة
-st.set_page_config(page_title="FIRAS SCHEDULER - النسخة الاحترافية", layout="wide", page_icon="📅")
+st.set_page_config(page_title="FIRAS SCHEDULER", layout="wide", page_icon="📅")
 
 # 2. قائمة التدرجات
 gradients = {
@@ -33,107 +33,132 @@ st.markdown(f"""
     h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
     .category-header {{ background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 10px; border-right: 5px solid {clr}; margin-top: 20px; text-align: right; color: white; }}
     .p-box {{ border: 2px solid {clr}; padding: 10px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); min-height: 120px; display: flex; flex-direction: column; justify-content: center; }}
+    .home-box {{ border-left: 5px solid {clr}; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 10px; }}
     .iqama-text {{ font-size: 0.85rem; color: #ffffff !important; font-weight: bold; margin-top: 5px; opacity: 0.9; }}
     .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: 900 !important; border-radius: 12px !important; width: 100%; }}
+    .stTabs [data-baseweb="tab-list"] {{ gap: 20px; justify-content: center; }}
+    .stTabs [data-baseweb="tab"] {{ background-color: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 30px; color: white; }}
 </style>
 """, unsafe_allow_html=True)
 
-# 5. الواجهة
+# 5. العنوان الرئيسي
 st.title("📅 FIRAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.4rem; color:{clr}; font-weight:bold;'>إعداد: FIRAS</p>", unsafe_allow_html=True)
 
-# 6. أوقات الصلاة والإقامة
-city = st.text_input("📍 اكتب المدينة هنا:", "Muscat")
-@st.cache_data(ttl=3600)
-def get_p(c):
-    try:
-        r = requests.get(f"http://api.aladhan.com/v1/timingsByCity?city={c}&country=Oman&method=4").json()
-        return r['data']['timings']
-    except: return None
-
-t = get_p(city)
-if t:
-    cols = st.columns(5)
-    p_names = {"Fajr":"الفجر","Dhuhr":"الظهر","Asr":"العصر","Maghrib":"المغرب","Isha":"العشاء"}
-    for i, (k, v) in enumerate(p_names.items()):
-        # وقت الأذان
-        azan_dt = dt.strptime(t[k], "%H:%M")
-        azan_str = azan_dt.strftime("%I:%M %p")
-        
-        # حساب وقت الإقامة
-        iqama_dt = azan_dt + timedelta(minutes=iqama_offset)
-        iqama_str = iqama_dt.strftime("%I:%M %p")
-        
-        cols[i].markdown(f"""
-            <div class="p-box">
-                <b style="color:{clr}; font-size:1.2rem;">{v}</b><br>
-                <span style="color:white; font-size:1rem;">📢 {azan_str}</span>
-                <div class="iqama-text">⏳ الإقامة: {iqama_str}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-st.divider()
-
-# 7. إدارة المهام والمجموعات
+# تهيئة مخزن المهام
 if 'tk' not in st.session_state:
     st.session_state.tk = []
 
-# تنظيف البيانات القديمة التي تسبب KeyError
-if st.session_state.tk:
-    if not all("category" in task for task in st.session_state.tk):
-        st.session_state.tk = []
-        st.rerun()
+# تنظيف البيانات القديمة
+if st.session_state.tk and not all("category" in task for task in st.session_state.tk):
+    st.session_state.tk = []
+    st.rerun()
 
-st.subheader("📝 إضافة مهمة جديدة")
-with st.form("task_form", clear_on_submit=True):
-    category = st.text_input("العنوان الرئيسي (مثلاً: المذاكرة، الألعاب):", "عام")
-    task_name = st.text_input("اسم المهمة:")
-    c1, c2 = st.columns(2)
-    t_start = c1.time_input("البداية")
-    t_end = c2.time_input("النهاية")
-    
-    if st.form_submit_button("إضافة للمجموعة ✨") and task_name:
-        st.session_state.tk.append({
-            "id": str(dt.now().timestamp()), 
-            "category": category if category else "عام",
-            "name": task_name,
-            "start": t_start.strftime("%I:%M %p"),
-            "end": t_end.strftime("%I:%M %p"),
-            "raw_time": t_start.strftime("%H:%M") 
-        })
-        st.rerun()
+# --- 6. نظام التبويبات (Tabs) ---
+tab_home, tab_full = st.tabs(["🏠 الرئيسية (الموجز)", "📑 الجدول والصلوات"])
 
-# 8. عرض الجدول
-if st.session_state.tk:
-    categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
-    
-    for cat in categories:
-        st.markdown(f'<div class="category-header"><h3>📁 {cat}</h3></div>', unsafe_allow_html=True)
-        cat_tasks = sorted([t for t in st.session_state.tk if t['category'] == cat], key=lambda x: x['raw_time'])
+with tab_home:
+    st.subheader("🚀 نظرة سريعة على يومك")
+    if st.session_state.tk:
+        categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
+        now_time = dt.now().strftime("%H:%M")
         
-        n_cols = 4
-        for i in range(0, len(cat_tasks), n_cols):
-            batch = cat_tasks[i:i + n_cols]
-            cols = st.columns(n_cols)
-            for j, task in enumerate(batch):
-                with cols[j]:
-                    st.markdown(f"""
-                    <div class="p-box" style="margin-top: 10px; margin-bottom: 5px; min-height: 80px;">
-                        <b style="color:{clr}; font-size: 1.1rem;">{task['name']}</b>
-                        <span style="font-size: 0.85rem; opacity: 0.9; color:white;">{task['start']} - {task['end']}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("❌ حذف", key=f"btn_{task['id']}", use_container_width=True):
-                        st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]
-                        st.rerun()
-    
-    st.write("---")
-    if st.button("🗑️ مسح جميع البيانات"):
-        st.session_state.tk = []
-        st.rerun()
-else:
-    st.info("الجدول فارغ حالياً.")
+        for cat in categories:
+            cat_tasks = sorted([t for t in st.session_state.tk if t['category'] == cat], key=lambda x: x['raw_time'])
+            # البحث عن المهمة القادمة (أول مهمة وقتها أكبر من الوقت الحالي)
+            next_task = next((t for t in cat_tasks if t['raw_time'] >= now_time), None)
+            
+            # إذا انتهت مهام اليوم، نعرض أول مهمة في القائمة كـ "مهمة تالية"
+            if not next_task and cat_tasks:
+                next_task = cat_tasks[0]
+
+            st.markdown(f"""
+            <div class="home-box">
+                <span style="font-size: 1.3rem; font-weight: bold; color: {clr};">📁 {cat}</span><br>
+                <span style="color: white; opacity: 0.8;">المهمة القادمة: </span>
+                <b style="color: white; font-size: 1.1rem;">{next_task['name'] if next_task else 'لا توجد مهام'}</b> 
+                <span style="float: left; color: {clr};">{next_task['start'] if next_task else ''}</span>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("لا توجد مهام حالياً. انتقل لتبويب 'الجدول' لإضافة مهامك.")
+
+with tab_full:
+    # أوقات الصلاة
+    city = st.text_input("📍 اكتب المدينة هنا:", "Muscat")
+    @st.cache_data(ttl=3600)
+    def get_p(c):
+        try:
+            r = requests.get(f"http://api.aladhan.com/v1/timingsByCity?city={c}&country=Oman&method=4").json()
+            return r['data']['timings']
+        except: return None
+
+    t_data = get_p(city)
+    if t_data:
+        cols = st.columns(5)
+        p_names = {"Fajr":"الفجر","Dhuhr":"الظهر","Asr":"العصر","Maghrib":"المغرب","Isha":"العشاء"}
+        for i, (k, v) in enumerate(p_names.items()):
+            azan_dt = dt.strptime(t_data[k], "%H:%M")
+            azan_str = azan_dt.strftime("%I:%M %p")
+            iqama_dt = azan_dt + timedelta(minutes=iqama_offset)
+            iqama_str = iqama_dt.strftime("%I:%M %p")
+            
+            cols[i].markdown(f"""
+                <div class="p-box">
+                    <b style="color:{clr}; font-size:1.2rem;">{v}</b><br>
+                    <span style="color:white; font-size:1rem;">📢 {azan_str}</span>
+                    <div class="iqama-text">⏳ الإقامة: {iqama_str}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # نموذج الإضافة
+    st.subheader("📝 إضافة مهمة جديدة")
+    with st.form("task_form", clear_on_submit=True):
+        category = st.text_input("العنوان الرئيسي (مثلاً: المذاكرة، الألعاب):", "عام")
+        task_name = st.text_input("اسم المهمة:")
+        c1, c2 = st.columns(2)
+        t_start = c1.time_input("البداية")
+        t_end = c2.time_input("النهاية")
+        
+        if st.form_submit_button("إضافة للمجموعة ✨") and task_name:
+            st.session_state.tk.append({
+                "id": str(dt.now().timestamp()), 
+                "category": category if category else "عام",
+                "name": task_name,
+                "start": t_start.strftime("%I:%M %p"),
+                "end": t_end.strftime("%I:%M %p"),
+                "raw_time": t_start.strftime("%H:%M") 
+            })
+            st.rerun()
+
+    # عرض الجدول التفصيلي
+    if st.session_state.tk:
+        categories = sorted(list(set([t['category'] for t in st.session_state.tk])))
+        for cat in categories:
+            st.markdown(f'<div class="category-header"><h3>📁 {cat}</h3></div>', unsafe_allow_html=True)
+            cat_tasks = sorted([t for t in st.session_state.tk if t['category'] == cat], key=lambda x: x['raw_time'])
+            
+            n_cols = 4
+            for i in range(0, len(cat_tasks), n_cols):
+                batch = cat_tasks[i:i + n_cols]
+                cols = st.columns(n_cols)
+                for j, task in enumerate(batch):
+                    with cols[j]:
+                        st.markdown(f"""
+                        <div class="p-box" style="margin-top: 10px; margin-bottom: 5px; min-height: 80px;">
+                            <b style="color:{clr}; font-size: 1.1rem;">{task['name']}</b>
+                            <span style="font-size: 0.85rem; opacity: 0.9; color:white;">{task['start']} - {task['end']}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        if st.button("❌ حذف", key=f"btn_{task['id']}", use_container_width=True):
+                            st.session_state.tk = [t for t in st.session_state.tk if t['id'] != task['id']]
+                            st.rerun()
+        
+        if st.button("🗑️ مسح جميع البيانات"):
+            st.session_state.tk = []
+            st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.write(f"المبرمج: **FIRAS**")

@@ -48,6 +48,10 @@ st.markdown(f"""
 if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
 if 'notes_content' not in st.session_state: st.session_state.notes_content = ""
+if 'timer_running' not in st.session_state: st.session_state.timer_running = False
+if 'timer_remaining' not in st.session_state: st.session_state.timer_remaining = 0
+if 'timer_total' not in st.session_state: st.session_state.timer_total = 0
+if 'timer_mode' not in st.session_state: st.session_state.timer_mode = ""
 
 def get_habit_message(habit):
     if habit['status'] is True:
@@ -65,7 +69,7 @@ st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr}; letter
 # 6. نظام التبويبات المحدث
 tab_home, tab_study, tab_full, tab_habits, tab_notes = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات", "📝 الملاحظات"])
 
-# --- التبويب الأول: الرئيسية (تم ربط الملاحظات هنا) ---
+# --- التبويب الأول: الرئيسية ---
 with tab_home:
     col_sched, col_side = st.columns([2, 1])
     with col_sched:
@@ -87,6 +91,17 @@ with tab_home:
             st.info("لا توجد مهام.")
 
     with col_side:
+        # عرض المؤقت النشط إذا كان يعمل
+        if st.session_state.timer_running:
+            rem_sec = st.session_state.timer_remaining
+            m, s = divmod(rem_sec, 60)
+            st.markdown(f"""
+            <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px;">
+                <b style="color:{clr}; font-size:1rem;">⏱️ المؤقت الحالي: {st.session_state.timer_mode}</b>
+                <div style="font-size:3rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55;">{m:02d}:{s:02d}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
         # عرض الملاحظات المثبتة في الرئيسية
         st.subheader("📌 ملاحظات مثبتة")
         if st.session_state.notes_content.strip():
@@ -107,11 +122,10 @@ with tab_home:
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- التبويب الجديد: الملاحظات (هنا تكتب الملاحظات لتظهر في الرئيسي) ---
+# --- التبويب الجديد: الملاحظات ---
 with tab_notes:
     st.subheader("📝 دفتر الملاحظات")
     st.markdown("ما تكتبه هنا سيظهر تلقائياً في التبويب الرئيسي كـ **ملاحظات مثبتة**.")
-    # ربط المدخلات بمخزن البيانات
     st.session_state.notes_content = st.text_area("اكتب ملاحظاتك، أهدافك، أو تذكيراتك هنا:", 
                                                value=st.session_state.notes_content, 
                                                height=400,
@@ -120,7 +134,7 @@ with tab_notes:
         st.success("تم تثبيت الملاحظات بنجاح!")
         st.rerun()
 
-# --- بقية التبويبات (بدون تغيير حرصاً على الكود الأصلي) ---
+# --- بقية التبويبات ---
 with tab_study:
     st.subheader("⏱️ مؤقت التركيز (بومودورو)")
     col_input1, col_input2 = st.columns(2)
@@ -134,15 +148,24 @@ with tab_study:
         if st.button("ابدأ التوقيت الآن 🚀"):
             total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
             remaining = total_seconds
+            
+            st.session_state.timer_running = True
+            st.session_state.timer_total = total_seconds
+            st.session_state.timer_mode = mode
+            
             while remaining > 0:
                 mins, secs = divmod(remaining, 60)
+                st.session_state.timer_remaining = remaining
                 placeholder.markdown(f'<div class="timer-display">{mins:02d}:{secs:02d}</div>', unsafe_allow_html=True)
                 progress_bar.progress(1 - (remaining / total_seconds))
                 time.sleep(1)
                 remaining -= 1
+                
+            st.session_state.timer_running = False
             st.balloons()
             st.success("انتهى الوقت!")
             placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
+            st.rerun()
 
 with tab_full:
     city = st.text_input("📍 المدينة:", "Muscat")

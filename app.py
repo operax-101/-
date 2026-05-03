@@ -136,7 +136,8 @@ with tab_home:
                 st.rerun()
             else:
                 show_js_timer(remaining, st.session_state.timer_mode)
-                if st.button("إيقاف المؤقت ⏹️"):
+                # تم إضافة key هنا لمنع التعارض
+                if st.button("إيقاف المؤقت ⏹️", key="stop_timer_home"):
                     st.session_state.timer_running = False
                     st.rerun()
                 st.divider()
@@ -192,7 +193,8 @@ with tab_study:
                 st.rerun()
             else:
                 show_js_timer(remaining, st.session_state.timer_mode)
-                if st.button("إيقاف المؤقت ⏹️"):
+                # تم إضافة key هنا لمنع التعارض
+                if st.button("إيقاف المؤقت ⏹️", key="stop_timer_study"):
                     st.session_state.timer_running = False
                     st.rerun()
         else:

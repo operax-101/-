@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime as dt, timedelta
 import requests
 import time
+import streamlit.components.v1 as components
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="FIRAS SCHEDULER", layout="wide", page_icon="📅")
@@ -49,21 +50,43 @@ if 'tk' not in st.session_state: st.session_state.tk = []
 if 'habits' not in st.session_state: st.session_state.habits = []
 if 'notes_content' not in st.session_state: st.session_state.notes_content = ""
 if 'timer_running' not in st.session_state: st.session_state.timer_running = False
-if 'timer_remaining' not in st.session_state: st.session_state.timer_remaining = 0
 if 'timer_total' not in st.session_state: st.session_state.timer_total = 0
+if 'timer_start_time' not in st.session_state: st.session_state.timer_start_time = None
 if 'timer_mode' not in st.session_state: st.session_state.timer_mode = ""
 
-# 6. نظام المؤقت التلقائي
-if st.session_state.timer_running:
-    if st.session_state.timer_remaining > 0:
-        time.sleep(1)
-        st.session_state.timer_remaining -= 1
-        st.rerun()
-    else:
-        st.session_state.timer_running = False
-        st.balloons()
-        st.success("انتهى الوقت!")
-        st.rerun()
+# 6. دالة عرض المؤقت باستخدام HTML/JS المباشر
+def show_js_timer(seconds, mode_name):
+    components.html(f"""
+    <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
+        <b style="color:{clr}; font-size:1.1rem; font-family:sans-serif;">⏱️ المؤقت الحالي: {mode_name}</b>
+        <div id="countdown" style="font-size:3.5rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;"></div>
+    </div>
+    <script>
+        var seconds = {seconds};
+        var countdownEl = document.getElementById('countdown');
+        
+        function updateTimer() {{
+            var minutes = Math.floor(seconds / 60);
+            var remainingSeconds = seconds % 60;
+            
+            countdownEl.innerHTML = 
+                (minutes < 10 ? "0" : "") + minutes + ":" + 
+                (remainingSeconds < 10 ? "0" : "") + remainingSeconds;
+                
+            if (seconds <= 0) {{
+                clearInterval(interval);
+                setTimeout(function() {{
+                    window.parent.location.reload();
+                }}, 1000);
+            }} else {{
+                seconds--;
+            }}
+        }}
+        
+        var interval = setInterval(updateTimer, 1000);
+        updateTimer();
+    </script>
+    """, height=145)
 
 def get_habit_message(habit):
     if habit['status'] is True:
@@ -103,16 +126,20 @@ with tab_home:
             st.info("لا توجد مهام.")
 
     with col_side:
-        # عرض المؤقت المباشر
-        if st.session_state.timer_running:
-            rem_sec = st.session_state.timer_remaining
-            m, s = divmod(rem_sec, 60)
-            st.markdown(f"""
-            <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px;">
-                <b style="color:{clr}; font-size:1rem;">⏱️ المؤقت الحالي: {st.session_state.timer_mode}</b>
-                <div style="font-size:3rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55;">{m:02d}:{s:02d}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        # عرض المؤقت المباشر في الشاشة الرئيسية عند تشغيله
+        if st.session_state.get('timer_running', False):
+            elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
+            remaining = int(st.session_state.timer_total - elapsed)
+            
+            if remaining <= 0:
+                st.session_state.timer_running = False
+                st.rerun()
+            else:
+                show_js_timer(remaining, st.session_state.timer_mode)
+                if st.button("إيقاف المؤقت ⏹️"):
+                    st.session_state.timer_running = False
+                    st.rerun()
+                st.divider()
 
         st.subheader("📌 ملاحظات مثبتة")
         if st.session_state.notes_content.strip():
@@ -145,33 +172,40 @@ with tab_notes:
         st.success("تم تثبيت الملاحظات بنجاح!")
         st.rerun()
 
-# --- بقية التبويبات ---
+# --- التبويب: الدراسة ---
 with tab_study:
     st.subheader("⏱️ مؤقت التركيز (بومودورو)")
     col_input1, col_input2 = st.columns(2)
     study_mins = col_input1.number_input("دقائق الدراسة:", min_value=1, max_value=120, value=25)
     break_mins = col_input2.number_input("دقائق الراحة:", min_value=1, max_value=30, value=5)
+    
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        placeholder = st.empty()
-        progress_bar = st.progress(0.0)
-        mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
-        
-        if st.button("ابدأ التوقيت الآن 🚀"):
-            total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
-            st.session_state.timer_running = True
-            st.session_state.timer_total = total_seconds
-            st.session_state.timer_remaining = total_seconds
-            st.session_state.timer_mode = mode
-            st.rerun()
+        if st.session_state.get('timer_running', False):
+            elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
+            remaining = int(st.session_state.timer_total - elapsed)
             
-        if st.session_state.timer_running:
-            m, s = divmod(st.session_state.timer_remaining, 60)
-            placeholder.markdown(f'<div class="timer-display">{m:02d}:{s:02d}</div>', unsafe_allow_html=True)
-            progress_bar.progress(1 - (st.session_state.timer_remaining / st.session_state.timer_total))
+            if remaining <= 0:
+                st.session_state.timer_running = False
+                st.balloons()
+                st.success("انتهى الوقت!")
+                st.rerun()
+            else:
+                show_js_timer(remaining, st.session_state.timer_mode)
+                if st.button("إيقاف المؤقت ⏹️"):
+                    st.session_state.timer_running = False
+                    st.rerun()
         else:
-            placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
-            progress_bar.progress(0.0)
+            progress_bar = st.progress(0.0)
+            mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
+            
+            if st.button("ابدأ التوقيت الآن 🚀"):
+                total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
+                st.session_state.timer_running = True
+                st.session_state.timer_total = total_seconds
+                st.session_state.timer_start_time = dt.now()
+                st.session_state.timer_mode = mode
+                st.rerun()
 
 with tab_full:
     city = st.text_input("📍 المدينة:", "Muscat")

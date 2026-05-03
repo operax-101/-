@@ -26,12 +26,22 @@ st.sidebar.divider()
 st.sidebar.subheader("⏱️ إعدادات الإقامة")
 iqama_offset = st.sidebar.slider("دقائق الانتظار للإقامة:", 5, 30, 20)
 
-# 4. التصميم المخصص (CSS)
+# 4. التصميم المخصص (CSS) المتجاوب
 st.markdown(f"""
 <style>
     .stApp {{ background: {selected_gradient} !important; background-attachment: fixed !important; }}
     [data-testid="stSidebar"] {{ background-color: rgba(0,0,0,0.5) !important; backdrop-filter: blur(10px); }}
-    h1, h2, h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); }}
+    
+    h1 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-size: 1.8rem; }}
+    h2 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-size: 1.5rem; }}
+    h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-size: 1.2rem; }}
+    
+    @media (min-width: 768px) {{
+        h1 {{ font-size: 2.5rem; }}
+        h2 {{ font-size: 2.0rem; }}
+        h3 {{ font-size: 1.5rem; }}
+    }}
+    
     .category-header {{ background: rgba(255, 255, 255, 0.05); padding: 5px 15px; border-radius: 12px; border-right: 5px solid {clr}; margin-top: 25px; text-align: right; }}
     .p-box {{ border: 1px solid {clr}44; padding: 15px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px); transition: 0.3s; }}
     .p-box:hover {{ border-color: {clr}; transform: translateY(-3px); }}
@@ -40,7 +50,6 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab-list"] {{ gap: 10px; justify-content: center; }}
     .stTabs [data-baseweb="tab"] {{ background-color: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 20px; color: white; }}
     .stTabs [aria-selected="true"] {{ background-color: {clr}33 !important; border-bottom: 2px solid {clr} !important; }}
-    .timer-display {{ font-size: 4rem; font-weight: bold; color: {clr}; text-align: center; font-family: monospace; text-shadow: 0 0 20px {clr}55; }}
     .sticky-note {{ background: rgba(255, 255, 255, 0.05); border-right: 4px solid {clr}; padding: 15px; border-radius: 10px; color: white; white-space: pre-wrap; }}
 </style>
 """, unsafe_allow_html=True)
@@ -54,12 +63,12 @@ if 'timer_total' not in st.session_state: st.session_state.timer_total = 0
 if 'timer_start_time' not in st.session_state: st.session_state.timer_start_time = None
 if 'timer_mode' not in st.session_state: st.session_state.timer_mode = ""
 
-# 6. دالة عرض المؤقت باستخدام HTML/JS المباشر
+# 6. دالة عرض المؤقت باستخدام HTML/JS المباشر مع استجابة للأجهزة المختلفة
 def show_js_timer(seconds, mode_name):
     components.html(f"""
     <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
         <b style="color:{clr}; font-size:1.1rem; font-family:sans-serif;">⏱️ المؤقت الحالي: {mode_name}</b>
-        <div id="countdown" style="font-size:3.5rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;"></div>
+        <div id="countdown" style="font-size: clamp(2.5rem, 8vw, 3.8rem); font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;"></div>
     </div>
     <script>
         var seconds = {seconds};
@@ -86,7 +95,7 @@ def show_js_timer(seconds, mode_name):
         var interval = setInterval(updateTimer, 1000);
         updateTimer();
     </script>
-    """, height=145)
+    """, height=155)
 
 def get_habit_message(habit):
     if habit['status'] is True:
@@ -99,7 +108,7 @@ def get_habit_message(habit):
 
 # العنوان الرئيسي
 st.title("📅 FIRAS SCHEDULER")
-st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr}; letter-spacing: 2px;'>CREATED BY: FIRAS</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:center; font-size:1.1rem; color:{clr}; letter-spacing: 2px;'>CREATED BY: FIRAS</p>", unsafe_allow_html=True)
 
 # نظام التبويبات
 tab_home, tab_study, tab_full, tab_habits, tab_notes = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات", "📝 الملاحظات"])
@@ -161,7 +170,7 @@ with tab_home:
             st.markdown(f"""
             <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
                 <b style="color:{clr}; font-size:1.1rem; font-family:sans-serif;">⏱️ المؤقت متوقف مؤقتاً: {st.session_state.timer_mode}</b>
-                <div style="font-size:3.5rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;">
+                <div style="font-size: clamp(2.5rem, 8vw, 3.8rem); font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;">
                     {mins:02d}:{secs:02d}
                 </div>
             </div>
@@ -257,7 +266,7 @@ with tab_study:
             st.markdown(f"""
             <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
                 <b style="color:{clr}; font-size:1.1rem; font-family:sans-serif;">⏱️ المؤقت متوقف مؤقتاً: {st.session_state.timer_mode}</b>
-                <div style="font-size:3.5rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;">
+                <div style="font-size: clamp(2.5rem, 8vw, 3.8rem); font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;">
                     {mins:02d}:{secs:02d}
                 </div>
             </div>
@@ -360,4 +369,4 @@ with tab_habits:
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.5</b></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.6</b></div>", unsafe_allow_html=True)

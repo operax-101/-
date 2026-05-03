@@ -127,7 +127,7 @@ with tab_home:
 
     with col_side:
         # عرض المؤقت المباشر في الشاشة الرئيسية عند تشغيله
-        if st.session_state.get('timer_running', False):
+        if st.session_state.get('timer_running', False) and st.session_state.timer_start_time is not None:
             elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
             remaining = int(st.session_state.timer_total - elapsed)
             
@@ -181,7 +181,7 @@ with tab_study:
     
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        if st.session_state.get('timer_running', False):
+        if st.session_state.get('timer_running', False) and st.session_state.timer_start_time is not None:
             elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
             remaining = int(st.session_state.timer_total - elapsed)
             

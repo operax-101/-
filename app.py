@@ -53,6 +53,18 @@ if 'timer_remaining' not in st.session_state: st.session_state.timer_remaining =
 if 'timer_total' not in st.session_state: st.session_state.timer_total = 0
 if 'timer_mode' not in st.session_state: st.session_state.timer_mode = ""
 
+# 6. نظام المؤقت التلقائي
+if st.session_state.timer_running:
+    if st.session_state.timer_remaining > 0:
+        time.sleep(1)
+        st.session_state.timer_remaining -= 1
+        st.rerun()
+    else:
+        st.session_state.timer_running = False
+        st.balloons()
+        st.success("انتهى الوقت!")
+        st.rerun()
+
 def get_habit_message(habit):
     if habit['status'] is True:
         if habit['type'] == 'good': return "✅ بطل! استمر في هذا الإنجاز. 🌟"
@@ -66,7 +78,7 @@ def get_habit_message(habit):
 st.title("📅 FIRAS SCHEDULER")
 st.markdown(f"<p style='text-align:center; font-size:1.2rem; color:{clr}; letter-spacing: 2px;'>CREATED BY: FIRAS</p>", unsafe_allow_html=True)
 
-# 6. نظام التبويبات المحدث
+# نظام التبويبات
 tab_home, tab_study, tab_full, tab_habits, tab_notes = st.tabs(["🏠 الرئيسية", "📚 جلسة الدراسة", "📑 الجدول والصلوات", "🎯 متتبع العادات", "📝 الملاحظات"])
 
 # --- التبويب الأول: الرئيسية ---
@@ -91,7 +103,7 @@ with tab_home:
             st.info("لا توجد مهام.")
 
     with col_side:
-        # عرض المؤقت النشط إذا كان يعمل
+        # عرض المؤقت المباشر
         if st.session_state.timer_running:
             rem_sec = st.session_state.timer_remaining
             m, s = divmod(rem_sec, 60)
@@ -102,7 +114,6 @@ with tab_home:
             </div>
             """, unsafe_allow_html=True)
 
-        # عرض الملاحظات المثبتة في الرئيسية
         st.subheader("📌 ملاحظات مثبتة")
         if st.session_state.notes_content.strip():
             st.markdown(f'<div class="sticky-note">{st.session_state.notes_content}</div>', unsafe_allow_html=True)
@@ -122,7 +133,7 @@ with tab_home:
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- التبويب الجديد: الملاحظات ---
+# --- التبويب: الملاحظات ---
 with tab_notes:
     st.subheader("📝 دفتر الملاحظات")
     st.markdown("ما تكتبه هنا سيظهر تلقائياً في التبويب الرئيسي كـ **ملاحظات مثبتة**.")
@@ -143,29 +154,24 @@ with tab_study:
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         placeholder = st.empty()
-        progress_bar = st.progress(0)
+        progress_bar = st.progress(0.0)
         mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
+        
         if st.button("ابدأ التوقيت الآن 🚀"):
             total_seconds = (study_mins if "دراسة" in mode else break_mins) * 60
-            remaining = total_seconds
-            
             st.session_state.timer_running = True
             st.session_state.timer_total = total_seconds
+            st.session_state.timer_remaining = total_seconds
             st.session_state.timer_mode = mode
-            
-            while remaining > 0:
-                mins, secs = divmod(remaining, 60)
-                st.session_state.timer_remaining = remaining
-                placeholder.markdown(f'<div class="timer-display">{mins:02d}:{secs:02d}</div>', unsafe_allow_html=True)
-                progress_bar.progress(1 - (remaining / total_seconds))
-                time.sleep(1)
-                remaining -= 1
-                
-            st.session_state.timer_running = False
-            st.balloons()
-            st.success("انتهى الوقت!")
-            placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
             st.rerun()
+            
+        if st.session_state.timer_running:
+            m, s = divmod(st.session_state.timer_remaining, 60)
+            placeholder.markdown(f'<div class="timer-display">{m:02d}:{s:02d}</div>', unsafe_allow_html=True)
+            progress_bar.progress(1 - (st.session_state.timer_remaining / st.session_state.timer_total))
+        else:
+            placeholder.markdown(f'<div class="timer-display">00:00</div>', unsafe_allow_html=True)
+            progress_bar.progress(0.0)
 
 with tab_full:
     city = st.text_input("📍 المدينة:", "Muscat")

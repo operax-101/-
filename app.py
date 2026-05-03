@@ -26,15 +26,21 @@ st.sidebar.divider()
 st.sidebar.subheader("⏱️ إعدادات الإقامة")
 iqama_offset = st.sidebar.slider("دقائق الانتظار للإقامة:", 5, 30, 20)
 
-# 4. التصميم المخصص (CSS) المتجاوب
+# 4. التصميم المخصص (CSS) - ضمان ظهور الخطوط باللون الأبيض
 st.markdown(f"""
 <style>
-    .stApp {{ background: {selected_gradient} !important; background-attachment: fixed !important; }}
-    [data-testid="stSidebar"] {{ background-color: rgba(0,0,0,0.5) !important; backdrop-filter: blur(10px); }}
+    .stApp {{ background: {selected_gradient} !important; background-attachment: fixed !important; color: #FFFFFF !important; }}
+    [data-testid="stSidebar"] {{ background-color: rgba(0,0,0,0.5) !important; backdrop-filter: blur(10px); color: #FFFFFF !important; }}
     
-    h1 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-size: 1.8rem; }}
-    h2 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-size: 1.5rem; }}
-    h3 {{ color: {clr} !important; text-align: center; text-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-size: 1.2rem; }}
+    /* جعل جميع النصوص والعناوين باللون الأبيض لضمان الوضوح */
+    h1, h2, h3, h4, p, span, div, label, li, .stMarkdown, .stInfo {{ 
+        color: #FFFFFF !important; 
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.7); 
+    }}
+    
+    h1 {{ font-size: 1.8rem; }}
+    h2 {{ font-size: 1.5rem; }}
+    h3 {{ font-size: 1.2rem; }}
     
     @media (min-width: 768px) {{
         h1 {{ font-size: 2.5rem; }}
@@ -46,7 +52,10 @@ st.markdown(f"""
     .p-box {{ border: 1px solid {clr}44; padding: 15px; border-radius: 15px; text-align: center; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px); transition: 0.3s; }}
     .p-box:hover {{ border-color: {clr}; transform: translateY(-3px); }}
     .habit-card {{ border: 1px solid {clr}44; padding: 15px; border-radius: 15px; background: rgba(255,255,255,0.05); margin-bottom: 10px; text-align: center; }}
+    
+    /* الأزرار تحتفظ بلون التميز مع خطوط بيضاء للوضوح */
     .stButton>button {{ background-color: {clr} !important; color: #000000 !important; font-weight: bold !important; border-radius: 10px !important; border: none !important; width: 100%; }}
+    
     .stTabs [data-baseweb="tab-list"] {{ gap: 10px; justify-content: center; }}
     .stTabs [data-baseweb="tab"] {{ background-color: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px 20px; color: white; }}
     .stTabs [aria-selected="true"] {{ background-color: {clr}33 !important; border-bottom: 2px solid {clr} !important; }}
@@ -63,7 +72,7 @@ if 'timer_total' not in st.session_state: st.session_state.timer_total = 0
 if 'timer_start_time' not in st.session_state: st.session_state.timer_start_time = None
 if 'timer_mode' not in st.session_state: st.session_state.timer_mode = ""
 
-# 6. دالة عرض المؤقت باستخدام HTML/JS المباشر مع استجابة للأجهزة المختلفة
+# 6. دالة عرض المؤقت باستخدام HTML/JS المباشر
 def show_js_timer(seconds, mode_name):
     components.html(f"""
     <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
@@ -127,7 +136,7 @@ with tab_home:
                 st.markdown(f"""
                 <div style="border-right: 5px solid {clr}; padding: 15px; background: rgba(255,255,255,0.07); border-radius: 12px; margin-bottom: 10px;">
                     <span style="color:{clr}; font-weight:bold;">📁 {cat}</span><br>
-                    <span style="color:white; font-size:1.1rem;">المهمة القادمة: <b>{next_task['name'] if next_task else 'لا يوجد'}</b></span>
+                    <span style="font-size:1.1rem;">المهمة القادمة: <b>{next_task['name'] if next_task else 'لا يوجد'}</b></span>
                     <span style="float:left; color:{clr};">{next_task['start'] if next_task else ''}</span>
                 </div>
                 """, unsafe_allow_html=True)
@@ -135,7 +144,6 @@ with tab_home:
             st.info("لا توجد مهام.")
 
     with col_side:
-        # حالة المؤقت قيد التشغيل (Running)
         if st.session_state.get('timer_running', False) and st.session_state.timer_start_time is not None:
             elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
             remaining = int(st.session_state.timer_total - elapsed)
@@ -163,7 +171,6 @@ with tab_home:
                         st.rerun()
                 st.divider()
 
-        # حالة المؤقت متوقف مؤقتاً (Paused)
         elif st.session_state.timer_total > 0 and not st.session_state.timer_running:
             mins = st.session_state.timer_total // 60
             secs = st.session_state.timer_total % 60
@@ -205,7 +212,7 @@ with tab_home:
                 st.markdown(f"""
                 <div style="border: 1px solid {card_border}66; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.3); margin-bottom: 10px;">
                     <div style="color:{card_border}; font-weight:bold; font-size:1rem;">{habit['name']}</div>
-                    <div style="color:white; font-size:0.85rem; margin-top:5px;">{msg if msg else "لم يتم التقييم بعد ⏳"}</div>
+                    <div style="margin-top:5px;">{msg if msg else "لم يتم التقييم بعد ⏳"}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -230,7 +237,6 @@ with tab_study:
     
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        # حالة المؤقت قيد التشغيل (Running)
         if st.session_state.get('timer_running', False) and st.session_state.timer_start_time is not None:
             elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
             remaining = int(st.session_state.timer_total - elapsed)
@@ -259,7 +265,6 @@ with tab_study:
                         st.session_state.timer_start_time = None
                         st.rerun()
         
-        # حالة المؤقت متوقف مؤقتاً (Paused)
         elif st.session_state.timer_total > 0 and not st.session_state.timer_running:
             mins = st.session_state.timer_total // 60
             secs = st.session_state.timer_total % 60
@@ -285,7 +290,6 @@ with tab_study:
                     st.session_state.timer_start_time = None
                     st.rerun()
         
-        # حالة عدم وجود مؤقت (Idle)
         else:
             progress_bar = st.progress(0.0)
             mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)

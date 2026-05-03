@@ -126,21 +126,60 @@ with tab_home:
             st.info("لا توجد مهام.")
 
     with col_side:
-        # عرض المؤقت المباشر في الشاشة الرئيسية عند تشغيله
+        # حالة المؤقت قيد التشغيل (Running)
         if st.session_state.get('timer_running', False) and st.session_state.timer_start_time is not None:
             elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
             remaining = int(st.session_state.timer_total - elapsed)
             
             if remaining <= 0:
                 st.session_state.timer_running = False
+                st.session_state.timer_total = 0
+                st.session_state.timer_start_time = None
                 st.rerun()
             else:
                 show_js_timer(remaining, st.session_state.timer_mode)
-                # تم إضافة key هنا لمنع التعارض
-                if st.button("إيقاف المؤقت ⏹️", key="stop_timer_home"):
-                    st.session_state.timer_running = False
-                    st.rerun()
+                
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button("إيقاف مؤقت ⏸️", key="pause_timer_home"):
+                        st.session_state.timer_total = remaining
+                        st.session_state.timer_running = False
+                        st.session_state.timer_start_time = None
+                        st.rerun()
+                with col_btn2:
+                    if st.button("إنهاء ⏹️", key="stop_timer_home"):
+                        st.session_state.timer_running = False
+                        st.session_state.timer_total = 0
+                        st.session_state.timer_start_time = None
+                        st.rerun()
                 st.divider()
+
+        # حالة المؤقت متوقف مؤقتاً (Paused)
+        elif st.session_state.timer_total > 0 and not st.session_state.timer_running:
+            mins = st.session_state.timer_total // 60
+            secs = st.session_state.timer_total % 60
+            st.markdown(f"""
+            <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
+                <b style="color:{clr}; font-size:1.1rem; font-family:sans-serif;">⏱️ المؤقت متوقف مؤقتاً: {st.session_state.timer_mode}</b>
+                <div style="font-size:3.5rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;">
+                    {mins:02d}:{secs:02d}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("استئناف ▶️", key="resume_timer_home"):
+                    st.session_state.timer_running = True
+                    st.session_state.timer_start_time = dt.now()
+                    st.rerun()
+            with col_btn2:
+                if st.button("إنهاء ⏹️", key="reset_timer_home"):
+                    st.session_state.timer_running = False
+                    st.session_state.timer_total = 0
+                    st.session_state.timer_start_time = None
+                    st.rerun()
+            st.divider()
 
         st.subheader("📌 ملاحظات مثبتة")
         if st.session_state.notes_content.strip():
@@ -182,21 +221,62 @@ with tab_study:
     
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
+        # حالة المؤقت قيد التشغيل (Running)
         if st.session_state.get('timer_running', False) and st.session_state.timer_start_time is not None:
             elapsed = (dt.now() - st.session_state.timer_start_time).total_seconds()
             remaining = int(st.session_state.timer_total - elapsed)
             
             if remaining <= 0:
                 st.session_state.timer_running = False
+                st.session_state.timer_total = 0
+                st.session_state.timer_start_time = None
                 st.balloons()
                 st.success("انتهى الوقت!")
                 st.rerun()
             else:
                 show_js_timer(remaining, st.session_state.timer_mode)
-                # تم إضافة key هنا لمنع التعارض
-                if st.button("إيقاف المؤقت ⏹️", key="stop_timer_study"):
-                    st.session_state.timer_running = False
+                
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button("إيقاف مؤقت ⏸️", key="pause_timer_study"):
+                        st.session_state.timer_total = remaining
+                        st.session_state.timer_running = False
+                        st.session_state.timer_start_time = None
+                        st.rerun()
+                with col_btn2:
+                    if st.button("إنهاء ⏹️", key="stop_timer_study"):
+                        st.session_state.timer_running = False
+                        st.session_state.timer_total = 0
+                        st.session_state.timer_start_time = None
+                        st.rerun()
+        
+        # حالة المؤقت متوقف مؤقتاً (Paused)
+        elif st.session_state.timer_total > 0 and not st.session_state.timer_running:
+            mins = st.session_state.timer_total // 60
+            secs = st.session_state.timer_total % 60
+            st.markdown(f"""
+            <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid {clr}44; margin-bottom:15px; backdrop-filter:blur(5px);">
+                <b style="color:{clr}; font-size:1.1rem; font-family:sans-serif;">⏱️ المؤقت متوقف مؤقتاً: {st.session_state.timer_mode}</b>
+                <div style="font-size:3.5rem; font-family:monospace; color:{clr}; text-shadow:0 0 10px {clr}55; font-weight:bold; margin-top: 10px;">
+                    {mins:02d}:{secs:02d}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("استئناف ▶️", key="resume_timer_study"):
+                    st.session_state.timer_running = True
+                    st.session_state.timer_start_time = dt.now()
                     st.rerun()
+            with col_btn2:
+                if st.button("إنهاء ⏹️", key="reset_timer_study"):
+                    st.session_state.timer_running = False
+                    st.session_state.timer_total = 0
+                    st.session_state.timer_start_time = None
+                    st.rerun()
+        
+        # حالة عدم وجود مؤقت (Idle)
         else:
             progress_bar = st.progress(0.0)
             mode = st.radio("اختر الوضع:", ["دراسة 📖", "راحة ☕"], horizontal=True)
@@ -280,4 +360,4 @@ with tab_habits:
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.4</b></div>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<div style='text-align:center; color:{clr};'><b>FIRAS SCHEDULER v2.5</b></div>", unsafe_allow_html=True)

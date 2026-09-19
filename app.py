@@ -1,17 +1,35 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# إعدادات الصفحة
+st.set_page_config(
+    page_title="محرك بحث المنتجات الحقيقي",
+    page_icon="🛍️",
+    layout="wide"
+)
+
+# تغليف HTML و JS داخل raw string (r""") لتفادي أخطاء السلسلة النصية في بايثون
+html_code = r"""
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>محرك بحث المنتجات الحقيقي المباشر</title>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- Google Tajawal Font -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Tajawal', sans-serif; }
+        * {
+            font-family: 'Tajawal', sans-serif;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
@@ -100,7 +118,7 @@
             try {
                 // التحقق من تعيين المفتاح الحقيقي
                 if (!RAPID_API_KEY || RAPID_API_KEY === "YOUR_RAPIDAPI_KEY_HERE") {
-                    throw new Error("يرجى وضع مفتاح API حقيقي من منصة RapidAPI في المتغير RAPID_API_KEY في السطر 83 لتمكين البحث الحي والمباشر.");
+                    throw new Error("يرجى وضع مفتاح API حقيقي من منصة RapidAPI في المتغير RAPID_API_KEY أسفل الكود لتمكين البحث الحي والمباشر.");
                 }
 
                 // طلب مباشر وحقيقي من API المتاجر
@@ -233,3 +251,7 @@
     </script>
 </body>
 </html>
+"""
+
+# رندر كود الـ HTML داخل Streamlit
+components.html(html_code, height=1000, scrolling=True)

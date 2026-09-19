@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import streamlit.components.v1 as components
 
 # إعدادات الصفحة في Streamlit
@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# كود HTML و JavaScript المكتمل مع صور متعددة لكل منتج ومتجر
+# كود HTML و JavaScript المكتمل مع الصور الديناميكية وشارات الأفضل والأرخص
 html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="dark">
@@ -69,7 +69,7 @@ html_code = """
         <input
           type="text"
           id="searchInput"
-          placeholder="اكتب اسم أي منتج (مثال: حذاء رياضي، iPhone 15، ساعة ذكية، عطر)..."
+          placeholder="اكتب اسم أي منتج للبحث عنه..."
           class="w-full bg-transparent text-white px-4 py-2 outline-none text-base"
         />
         <button
@@ -84,7 +84,7 @@ html_code = """
     <!-- Loading UI -->
     <div id="loadingUI" class="hidden text-center py-16 space-y-3">
       <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري الاستعلام والمقارنة بين المتاجر...</p>
+      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري الاستعلام وتوليد الصور والمقارنة...</p>
     </div>
 
     <!-- Results Container -->
@@ -106,76 +106,16 @@ html_code = """
 
     let lastQuery = '';
 
-    // دالة توفر صور مختلفة لكل متجر حسب تصنيف البحث
-    function getCategoryData(query) {
+    // دالة لتحديد السعر الأساسي التقريبي
+    function getBasePrice(query) {
       const q = query.toLowerCase();
-      
-      if (q.includes('حذاء') || q.includes('شوز') || q.includes('shoe') || q.includes('sneaker') || q.includes('nike')) {
-        return {
-          baseUSD: 65,
-          imgs: [
-            'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&fit=crop'
-          ]
-        };
-      }
-      if (q.includes('ساعة') || q.includes('watch') || q.includes('smartwatch')) {
-        return {
-          baseUSD: 85,
-          imgs: [
-            'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&fit=crop'
-          ]
-        };
-      }
-      if (q.includes('آيفون') || q.includes('iphone') || q.includes('هاتف') || q.includes('phone') || q.includes('سامسونج')) {
-        return {
-          baseUSD: 780,
-          imgs: [
-            'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&fit=crop'
-          ]
-        };
-      }
-      if (q.includes('حقيبة') || q.includes('شنطة') || q.includes('bag')) {
-        return {
-          baseUSD: 42,
-          imgs: [
-            'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&fit=crop'
-          ]
-        };
-      }
-      if (q.includes('عطر') || q.includes('perfume')) {
-        return {
-          baseUSD: 95,
-          imgs: [
-            'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&fit=crop',
-            'https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?w=600&fit=crop'
-          ]
-        };
-      }
-
-      // صور افتراضية لمختلف المنتجات العامة
-      return {
-        baseUSD: 40,
-        imgs: [
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&fit=crop',
-          'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&fit=crop',
-          'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&fit=crop',
-          'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=600&fit=crop'
-        ]
-      };
+      if (q.includes('حذاء') || q.includes('شوز') || q.includes('shoe')) return 65;
+      if (q.includes('ساعة') || q.includes('watch')) return 85;
+      if (q.includes('آيفون') || q.includes('هاتف') || q.includes('phone')) return 780;
+      if (q.includes('حقيبة') || q.includes('شنطة') || q.includes('bag')) return 42;
+      if (q.includes('عطر') || q.includes('perfume')) return 95;
+      if (q.includes('لابتوب') || q.includes('كمبيوتر')) return 600;
+      return 40; // السعر الافتراضي لأي شيء آخر
     }
 
     function runSearch(e) {
@@ -191,7 +131,7 @@ html_code = """
         displayResults();
         document.getElementById('loadingUI').classList.add('hidden');
         document.getElementById('resultsUI').classList.remove('hidden');
-      }, 500);
+      }, 1000); // زيادة وقت التحميل قليلاً لإعطاء شعور بالبحث الحقيقي
     }
 
     function updateCurrency() {
@@ -200,43 +140,77 @@ html_code = """
 
     function displayResults() {
       const currency = document.getElementById('currencySelect').value;
-      const meta = getCategoryData(lastQuery);
-      const base = meta.baseUSD;
+      const baseUSD = getBasePrice(lastQuery);
       const rate = RATES[currency] || 1;
       const sym = SYMBOLS[currency];
+      
+      // ترميز الكلمة لاستخدامها في رابط توليد الصور الديناميكية
+      const encodedQuery = encodeURIComponent(lastQuery + ' product clean background');
 
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
-      const stores = [
-        { store: 'Noon', title: `${lastQuery} - الاصلي الضمان العالي`, price: (base * 1.1 * rate).toFixed(2), shipUSD: 0, score: 98, img: meta.imgs[0], url: 'https://www.noon.com' },
-        { store: 'AliExpress', title: `منتج ${lastQuery} شحن سريع`, price: (base * 0.85 * rate).toFixed(2), shipUSD: 3.50, score: 94, img: meta.imgs[1], url: 'https://www.aliexpress.com' },
-        { store: 'Temu', title: `عرض خاص: ${lastQuery} سعر اقتصادي`, price: (base * 0.65 * rate).toFixed(2), shipUSD: 0, score: 88, img: meta.imgs[2], url: 'https://www.temu.com' },
-        { store: 'SHEIN', title: `${lastQuery} إكسسوارات الموضة`, price: (base * 0.72 * rate).toFixed(2), shipUSD: 2.00, score: 82, img: meta.imgs[3], url: 'https://www.shein.com' }
+      // تجهيز بيانات المتاجر
+      let stores = [
+        { store: 'Noon', title: `${lastQuery} - ضمان الوكيل الأصلي`, basePrice: baseUSD * 1.1, shipUSD: 0, score: 98, imgSeed: 10, url: 'https://www.noon.com' },
+        { store: 'AliExpress', title: `منتج ${lastQuery} شحن دولي`, basePrice: baseUSD * 0.85, shipUSD: 3.50, score: 94, imgSeed: 20, url: 'https://www.aliexpress.com' },
+        { store: 'Temu', title: `عرض ترويجي: ${lastQuery}`, basePrice: baseUSD * 0.65, shipUSD: 0, score: 88, imgSeed: 30, url: 'https://www.temu.com' },
+        { store: 'SHEIN', title: `${lastQuery} الموضة والترند`, basePrice: baseUSD * 0.72, shipUSD: 2.00, score: 82, imgSeed: 40, url: 'https://www.shein.com' }
       ];
+
+      // حساب الأسعار النهائية والتكلفة الإجمالية لمعرفة الأرخص
+      stores.forEach(s => {
+        s.finalPrice = s.basePrice * rate;
+        s.finalShip = s.shipUSD * rate;
+        s.totalCost = s.finalPrice + s.finalShip;
+      });
+
+      // تحديد الأفضل (أعلى Score) والأرخص (أقل TotalCost)
+      const bestStore = stores.reduce((max, obj) => (obj.score > max.score) ? obj : max, stores[0]);
+      const cheapestStore = stores.reduce((min, obj) => (obj.totalCost < min.totalCost) ? obj : min, stores[0]);
 
       const grid = document.getElementById('cardsGrid');
       grid.innerHTML = '';
 
       stores.forEach(item => {
-        const shippingText = item.shipUSD === 0 ? 'مجاني' : `${(item.shipUSD * rate).toFixed(2)} ${sym}`;
+        const shippingText = item.shipUSD === 0 ? 'مجاني' : `${item.finalShip.toFixed(2)} ${sym}`;
+        
+        // توليد صورة متوافقة تماماً مع الكلمة المكتوبة باستخدام AI Image API
+        const imgUrl = `https://image.pollinations.ai/prompt/${encodedQuery}?width=400&height=400&nologo=true&seed=${item.imgSeed}`;
+
+        // تحديد الشارات (Badges)
+        let badgesHtml = '';
+        if (item.store === bestStore.store) {
+          badgesHtml += `<span class="absolute top-2 right-2 bg-yellow-500 text-yellow-950 text-xs font-black px-2 py-1 rounded-md z-10 shadow-lg border border-yellow-400">⭐ الأفضل</span>`;
+        }
+        if (item.store === cheapestStore.store) {
+          badgesHtml += `<span class="absolute top-2 left-2 bg-emerald-500 text-emerald-950 text-xs font-black px-2 py-1 rounded-md z-10 shadow-lg border border-emerald-400">💰 الأرخص</span>`;
+        }
         
         grid.innerHTML += `
-          <div class="bg-slate-800 rounded-2xl border border-slate-700 p-4 flex flex-col justify-between shadow-lg hover:border-indigo-500 transition">
+          <div class="bg-slate-800 rounded-2xl border border-slate-700 p-4 flex flex-col justify-between shadow-lg hover:border-indigo-500 transition relative overflow-hidden">
             <div>
               <div class="flex justify-between items-center mb-2">
                 <span class="text-xs font-bold px-2.5 py-1 bg-indigo-950 text-indigo-300 rounded-md border border-indigo-800">${item.store}</span>
-                <span class="text-xs text-emerald-400 font-bold">تطابق ${item.score}%</span>
+                <span class="text-xs text-slate-300 font-bold">تقييم ${item.score}%</span>
               </div>
-              <div class="aspect-square rounded-xl bg-slate-700 overflow-hidden mb-3">
-                <img src="${item.img}" alt="${item.title}" class="w-full h-full object-cover hover:scale-105 transition duration-300" />
+              
+              <!-- حاوية الصورة مع الشارات -->
+              <div class="relative aspect-square rounded-xl bg-slate-700 overflow-hidden mb-3">
+                ${badgesHtml}
+                <img src="${imgUrl}" alt="${item.title}" class="w-full h-full object-cover hover:scale-105 transition duration-500" loading="lazy" />
               </div>
+              
               <h3 class="font-bold text-sm text-white line-clamp-2 mb-2">${item.title}</h3>
             </div>
+            
             <div class="pt-3 border-t border-slate-700">
-              <div class="text-2xl font-black text-white mb-1">${item.price} ${sym}</div>
-              <div class="text-xs text-slate-400 mb-3">الشحن: ${shippingText}</div>
-              <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block text-center w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition">
-                رابط الشراء المباشر
+              <div class="text-2xl font-black text-white mb-1">${item.finalPrice.toFixed(2)} ${sym}</div>
+              <div class="flex justify-between items-center mb-3">
+                <div class="text-xs text-slate-400">الشحن: ${shippingText}</div>
+                <div class="text-xs text-indigo-300 font-bold">الإجمالي: ${item.totalCost.toFixed(2)} ${sym}</div>
+              </div>
+              <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block text-center w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition">
+                شراء الآن
               </a>
             </div>
           </div>

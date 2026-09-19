@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import streamlit.components.v1 as components
 
 # إعدادات الصفحة في Streamlit
@@ -106,7 +106,6 @@ html_code = """
 
     let lastQuery = '';
 
-    // دالة لتحديد السعر الأساسي التقريبي
     function getBasePrice(query) {
       const q = query.toLowerCase();
       if (q.includes('حذاء') || q.includes('شوز') || q.includes('shoe')) return 65;
@@ -115,7 +114,7 @@ html_code = """
       if (q.includes('حقيبة') || q.includes('شنطة') || q.includes('bag')) return 42;
       if (q.includes('عطر') || q.includes('perfume')) return 95;
       if (q.includes('لابتوب') || q.includes('كمبيوتر')) return 600;
-      return 40; // السعر الافتراضي لأي شيء آخر
+      return 40;
     }
 
     function runSearch(e) {
@@ -131,7 +130,7 @@ html_code = """
         displayResults();
         document.getElementById('loadingUI').classList.add('hidden');
         document.getElementById('resultsUI').classList.remove('hidden');
-      }, 1000); // زيادة وقت التحميل قليلاً لإعطاء شعور بالبحث الحقيقي
+      }, 1000);
     }
 
     function updateCurrency() {
@@ -144,12 +143,10 @@ html_code = """
       const rate = RATES[currency] || 1;
       const sym = SYMBOLS[currency];
       
-      // ترميز الكلمة لاستخدامها في رابط توليد الصور الديناميكية
       const encodedQuery = encodeURIComponent(lastQuery + ' product clean background');
 
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
-      // تجهيز بيانات المتاجر
       let stores = [
         { store: 'Noon', title: `${lastQuery} - ضمان الوكيل الأصلي`, basePrice: baseUSD * 1.1, shipUSD: 0, score: 98, imgSeed: 10, url: 'https://www.noon.com' },
         { store: 'AliExpress', title: `منتج ${lastQuery} شحن دولي`, basePrice: baseUSD * 0.85, shipUSD: 3.50, score: 94, imgSeed: 20, url: 'https://www.aliexpress.com' },
@@ -157,14 +154,12 @@ html_code = """
         { store: 'SHEIN', title: `${lastQuery} الموضة والترند`, basePrice: baseUSD * 0.72, shipUSD: 2.00, score: 82, imgSeed: 40, url: 'https://www.shein.com' }
       ];
 
-      // حساب الأسعار النهائية والتكلفة الإجمالية لمعرفة الأرخص
       stores.forEach(s => {
         s.finalPrice = s.basePrice * rate;
         s.finalShip = s.shipUSD * rate;
         s.totalCost = s.finalPrice + s.finalShip;
       });
 
-      // تحديد الأفضل (أعلى Score) والأرخص (أقل TotalCost)
       const bestStore = stores.reduce((max, obj) => (obj.score > max.score) ? obj : max, stores[0]);
       const cheapestStore = stores.reduce((min, obj) => (obj.totalCost < min.totalCost) ? obj : min, stores[0]);
 
@@ -174,10 +169,8 @@ html_code = """
       stores.forEach(item => {
         const shippingText = item.shipUSD === 0 ? 'مجاني' : `${item.finalShip.toFixed(2)} ${sym}`;
         
-        // توليد صورة متوافقة تماماً مع الكلمة المكتوبة باستخدام AI Image API
         const imgUrl = `https://image.pollinations.ai/prompt/${encodedQuery}?width=400&height=400&nologo=true&seed=${item.imgSeed}`;
 
-        // تحديد الشارات (Badges)
         let badgesHtml = '';
         if (item.store === bestStore.store) {
           badgesHtml += `<span class="absolute top-2 right-2 bg-yellow-500 text-yellow-950 text-xs font-black px-2 py-1 rounded-md z-10 shadow-lg border border-yellow-400">⭐ الأفضل</span>`;
@@ -194,7 +187,6 @@ html_code = """
                 <span class="text-xs text-slate-300 font-bold">تقييم ${item.score}%</span>
               </div>
               
-              <!-- حاوية الصورة مع الشارات -->
               <div class="relative aspect-square rounded-xl bg-slate-700 overflow-hidden mb-3">
                 ${badgesHtml}
                 <img src="${imgUrl}" alt="${item.title}" class="w-full h-full object-cover hover:scale-105 transition duration-500" loading="lazy" />

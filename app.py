@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# كود HTML و JavaScript المكتمل والمصحح
+# كود HTML و JavaScript المكتمل مع صور متعددة لكل منتج ومتجر
 html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="dark">
@@ -69,7 +69,7 @@ html_code = """
         <input
           type="text"
           id="searchInput"
-          placeholder="اكتب اسم أي منتج (مثال: حذاء رياضي، iPhone 15، ساعة ذكية)..."
+          placeholder="اكتب اسم أي منتج (مثال: حذاء رياضي، iPhone 15، ساعة ذكية، عطر)..."
           class="w-full bg-transparent text-white px-4 py-2 outline-none text-base"
         />
         <button
@@ -106,24 +106,76 @@ html_code = """
 
     let lastQuery = '';
 
+    // دالة توفر صور مختلفة لكل متجر حسب تصنيف البحث
     function getCategoryData(query) {
       const q = query.toLowerCase();
+      
       if (q.includes('حذاء') || q.includes('شوز') || q.includes('shoe') || q.includes('sneaker') || q.includes('nike')) {
-        return { img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&fit=crop', baseUSD: 65 };
+        return {
+          baseUSD: 65,
+          imgs: [
+            'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&fit=crop'
+          ]
+        };
       }
       if (q.includes('ساعة') || q.includes('watch') || q.includes('smartwatch')) {
-        return { img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&fit=crop', baseUSD: 85 };
+        return {
+          baseUSD: 85,
+          imgs: [
+            'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&fit=crop'
+          ]
+        };
       }
       if (q.includes('آيفون') || q.includes('iphone') || q.includes('هاتف') || q.includes('phone') || q.includes('سامسونج')) {
-        return { img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&fit=crop', baseUSD: 780 };
+        return {
+          baseUSD: 780,
+          imgs: [
+            'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=600&fit=crop'
+          ]
+        };
       }
       if (q.includes('حقيبة') || q.includes('شنطة') || q.includes('bag')) {
-        return { img: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&fit=crop', baseUSD: 42 };
+        return {
+          baseUSD: 42,
+          imgs: [
+            'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&fit=crop'
+          ]
+        };
       }
       if (q.includes('عطر') || q.includes('perfume')) {
-        return { img: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&fit=crop', baseUSD: 95 };
+        return {
+          baseUSD: 95,
+          imgs: [
+            'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=600&fit=crop',
+            'https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?w=600&fit=crop'
+          ]
+        };
       }
-      return { img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&fit=crop', baseUSD: 40 };
+
+      // صور افتراضية لمختلف المنتجات العامة
+      return {
+        baseUSD: 40,
+        imgs: [
+          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&fit=crop',
+          'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&fit=crop',
+          'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&fit=crop',
+          'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=600&fit=crop'
+        ]
+      };
     }
 
     function runSearch(e) {
@@ -156,10 +208,10 @@ html_code = """
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
       const stores = [
-        { store: 'Noon', title: `${lastQuery} - الأصلي الضمان العالي`, price: (base * 1.1 * rate).toFixed(2), shipUSD: 0, score: 98, url: 'https://www.noon.com' },
-        { store: 'AliExpress', title: `منتج ${lastQuery} شحن سريع`, price: (base * 0.85 * rate).toFixed(2), shipUSD: 3.50, score: 94, url: 'https://www.aliexpress.com' },
-        { store: 'Temu', title: `عرض خاص: ${lastQuery} سعر اقتصادي`, price: (base * 0.65 * rate).toFixed(2), shipUSD: 0, score: 88, url: 'https://www.temu.com' },
-        { store: 'SHEIN', title: `${lastQuery} إكسسوارات الموضة`, price: (base * 0.72 * rate).toFixed(2), shipUSD: 2.00, score: 82, url: 'https://www.shein.com' }
+        { store: 'Noon', title: `${lastQuery} - الاصلي الضمان العالي`, price: (base * 1.1 * rate).toFixed(2), shipUSD: 0, score: 98, img: meta.imgs[0], url: 'https://www.noon.com' },
+        { store: 'AliExpress', title: `منتج ${lastQuery} شحن سريع`, price: (base * 0.85 * rate).toFixed(2), shipUSD: 3.50, score: 94, img: meta.imgs[1], url: 'https://www.aliexpress.com' },
+        { store: 'Temu', title: `عرض خاص: ${lastQuery} سعر اقتصادي`, price: (base * 0.65 * rate).toFixed(2), shipUSD: 0, score: 88, img: meta.imgs[2], url: 'https://www.temu.com' },
+        { store: 'SHEIN', title: `${lastQuery} إكسسوارات الموضة`, price: (base * 0.72 * rate).toFixed(2), shipUSD: 2.00, score: 82, img: meta.imgs[3], url: 'https://www.shein.com' }
       ];
 
       const grid = document.getElementById('cardsGrid');
@@ -176,7 +228,7 @@ html_code = """
                 <span class="text-xs text-emerald-400 font-bold">تطابق ${item.score}%</span>
               </div>
               <div class="aspect-square rounded-xl bg-slate-700 overflow-hidden mb-3">
-                <img src="${meta.img}" alt="${item.title}" class="w-full h-full object-cover" />
+                <img src="${item.img}" alt="${item.title}" class="w-full h-full object-cover hover:scale-105 transition duration-300" />
               </div>
               <h3 class="font-bold text-sm text-white line-clamp-2 mb-2">${item.title}</h3>
             </div>

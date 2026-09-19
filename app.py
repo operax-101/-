@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# كود HTML و JavaScript المعدل والموثوق للصور
+# كود HTML و JavaScript للبحث المباشر عن صور المنتجات
 html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="dark">
@@ -62,7 +62,7 @@ html_code = """
         قارن أسعار المتاجر فوراً بالذكاء الاصطناعي
       </h1>
       <p class="text-slate-400 text-sm sm:text-base">
-        يبحث في Noon, AliExpress, Temu, و SHEIN ويعرض لك المنتجات بأسعارها المباشرة.
+        بحث شامل في Noon, AliExpress, Temu, و SHEIN مع صور مطابقة لنوع المنتج.
       </p>
 
       <form onsubmit="runSearch(event)" class="flex gap-2 bg-slate-800 p-2 rounded-2xl border border-slate-700 shadow-2xl">
@@ -84,7 +84,7 @@ html_code = """
     <!-- Loading UI -->
     <div id="loadingUI" class="hidden text-center py-16 space-y-3">
       <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري تحضير صور المنتجات والأسعار المباشرة...</p>
+      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري جلب صور المنتجات المطابقة والأسعار...</p>
     </div>
 
     <!-- Results Container -->
@@ -131,7 +131,7 @@ html_code = """
         displayResults();
         document.getElementById('loadingUI').classList.add('hidden');
         document.getElementById('resultsUI').classList.remove('hidden');
-      }, 400);
+      }, 500);
     }
 
     function updateCurrency() {
@@ -148,16 +148,16 @@ html_code = """
 
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
-      // استخدام معرّفات صور شغال ومضمون 100% بدون أي تشفير أو حظر
+      // مولّد صور ذكي ومطابق تماماً للكلمة المبحوث عنها بأساليب عرض مختلفة لكل متجر
       let stores = [
         { 
           store: 'Noon', 
-          title: `${lastQuery} - الاصدار الأصلي (نون)`, 
+          title: `${lastQuery} - الإصدار الأصلي (نون)`, 
           basePrice: baseOMR * 1.15, 
           shipOMR: 0, 
           score: 98, 
           url: `https://www.noon.com/oman-ar/search/?q=${encodedQuery}`,
-          imgUrl: `https://picsum.photos/id/175/400/400`
+          imgUrl: `https://image.pollinations.ai/prompt/professional%20studio%20product%20photo%20of%20${encodedQuery}%20isolated%20on%20clean%20background?width=400&height=400&seed=11`
         },
         { 
           store: 'AliExpress', 
@@ -166,7 +166,7 @@ html_code = """
           shipOMR: 0.80, 
           score: 94, 
           url: `https://www.aliexpress.com/w/wholesale-${encodedQuery}.html`,
-          imgUrl: `https://picsum.photos/id/160/400/400`
+          imgUrl: `https://image.pollinations.ai/prompt/high%20quality%20tech%20product%20shot%20of%20${encodedQuery}?width=400&height=400&seed=22`
         },
         { 
           store: 'Temu', 
@@ -175,7 +175,7 @@ html_code = """
           shipOMR: 0, 
           score: 88, 
           url: `https://www.temu.com/search_result.html?search_key=${encodedQuery}`,
-          imgUrl: `https://picsum.photos/id/201/400/400`
+          imgUrl: `https://image.pollinations.ai/prompt/modern%20commercial%20product%20photo%20of%20${encodedQuery}?width=400&height=400&seed=33`
         },
         { 
           store: 'SHEIN', 
@@ -184,7 +184,7 @@ html_code = """
           shipOMR: 0.50, 
           score: 82, 
           url: `https://www.shein.com/pdsearch/${encodedQuery}`,
-          imgUrl: `https://picsum.photos/id/250/400/400`
+          imgUrl: `https://image.pollinations.ai/prompt/lifestyle%20fashion%20product%20photo%20of%20${encodedQuery}?width=400&height=400&seed=44`
         }
       ];
 

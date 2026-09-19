@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# كود HTML و JavaScript المعدل بجلب صور حقيقية ومباشرة
+# كود HTML و JavaScript المعدل والموثوق للصور
 html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="dark">
@@ -62,7 +62,7 @@ html_code = """
         قارن أسعار المتاجر فوراً بالذكاء الاصطناعي
       </h1>
       <p class="text-slate-400 text-sm sm:text-base">
-        يبحث في Noon, AliExpress, Temu, و SHEIN ويعرض لك المنتجات الحقيقية المباشرة.
+        يبحث في Noon, AliExpress, Temu, و SHEIN ويعرض لك المنتجات بأسعارها المباشرة.
       </p>
 
       <form onsubmit="runSearch(event)" class="flex gap-2 bg-slate-800 p-2 rounded-2xl border border-slate-700 shadow-2xl">
@@ -84,7 +84,7 @@ html_code = """
     <!-- Loading UI -->
     <div id="loadingUI" class="hidden text-center py-16 space-y-3">
       <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري جلب صور المنتجات المباشرة المطابقة وتحديث الأسعار...</p>
+      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري تحضير صور المنتجات والأسعار المباشرة...</p>
     </div>
 
     <!-- Results Container -->
@@ -131,7 +131,7 @@ html_code = """
         displayResults();
         document.getElementById('loadingUI').classList.add('hidden');
         document.getElementById('resultsUI').classList.remove('hidden');
-      }, 500);
+      }, 400);
     }
 
     function updateCurrency() {
@@ -148,7 +148,7 @@ html_code = """
 
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
-      // جلب صور حقيقية وواقعية ومختلفة لكل متجر عبر Unsplash Source API
+      // استخدام معرّفات صور شغال ومضمون 100% بدون أي تشفير أو حظر
       let stores = [
         { 
           store: 'Noon', 
@@ -157,7 +157,7 @@ html_code = """
           shipOMR: 0, 
           score: 98, 
           url: `https://www.noon.com/oman-ar/search/?q=${encodedQuery}`,
-          imgUrl: `https://source.unsplash.com/400x400/?${encodedQuery},product,brand&sig=101`
+          imgUrl: `https://picsum.photos/id/175/400/400`
         },
         { 
           store: 'AliExpress', 
@@ -166,7 +166,7 @@ html_code = """
           shipOMR: 0.80, 
           score: 94, 
           url: `https://www.aliexpress.com/w/wholesale-${encodedQuery}.html`,
-          imgUrl: `https://source.unsplash.com/400x400/?${encodedQuery},gadget,store&sig=202`
+          imgUrl: `https://picsum.photos/id/160/400/400`
         },
         { 
           store: 'Temu', 
@@ -175,7 +175,7 @@ html_code = """
           shipOMR: 0, 
           score: 88, 
           url: `https://www.temu.com/search_result.html?search_key=${encodedQuery}`,
-          imgUrl: `https://source.unsplash.com/400x400/?${encodedQuery},item,shopping&sig=303`
+          imgUrl: `https://picsum.photos/id/201/400/400`
         },
         { 
           store: 'SHEIN', 
@@ -184,7 +184,7 @@ html_code = """
           shipOMR: 0.50, 
           score: 82, 
           url: `https://www.shein.com/pdsearch/${encodedQuery}`,
-          imgUrl: `https://source.unsplash.com/400x400/?${encodedQuery},fashion,style&sig=404`
+          imgUrl: `https://picsum.photos/id/250/400/400`
         }
       ];
 
@@ -200,11 +200,8 @@ html_code = """
       const grid = document.getElementById('cardsGrid');
       grid.innerHTML = '';
 
-      stores.forEach((item, index) => {
+      stores.forEach((item) => {
         const shippingText = item.shipOMR === 0 ? 'مجاني' : `${item.finalShip.toFixed(2)} ${sym}`;
-
-        // رابط بديل احتياطي متوافق مع المنتج في حال تعذر التحميل الأول
-        const backupImg = `https://pollinations.ai/p/${encodedQuery}%20real%20product%20photo%20high%20quality?width=400&height=400&seed=${(index + 1) * 77}`;
 
         let badgesHtml = '';
         if (item.store === bestStore.store) {
@@ -226,7 +223,6 @@ html_code = """
                 ${badgesHtml}
                 <img 
                   src="${item.imgUrl}" 
-                  onerror="this.onerror=null; this.src='${backupImg}';" 
                   alt="${item.title}" 
                   class="w-full h-full object-cover hover:scale-105 transition duration-500" 
                   loading="eager" 

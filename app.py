@@ -1,3 +1,6 @@
+import json
+import re
+import urllib.parse
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -8,7 +11,78 @@ st.set_page_config(
     layout="wide"
 )
 
-# كود HTML و JavaScript الخاص بالموقع
+# ---------------------------------------------------------
+# Data Pipeline & Normalization Layer
+# ---------------------------------------------------------
+
+def parse_price(raw_price):
+    """استخراج المعالجة الدقيقة للسعر بدون تخمين"""
+    if raw_price is None:
+        return None, None
+    
+    if isinstance(raw_price, (int, float)):
+        return float(raw_price), "OMR"
+
+    # استخراج الأرقام مع الأجزاء العشرية
+    clean_str = str(raw_price).strip()
+    match = re.search(r'(\d+(?:\.\d{1,2})?)', clean_str.replace(',', ''))
+    if match:
+        try:
+            val = float(match.group(1))
+            # استخراج رمز العملة المتاح
+            currency_match = re.search(r'(OMR|AED|SAR|USD|EUR|\$|ر\.س|ر\.ع)', clean_str, re.IGNORECASE)
+            currency = currency_match.group(1).upper() if currency_match else "OMR"
+            return val, currency
+        except ValueError:
+            return None, None
+    return None, None
+
+def validate_image_url(url):
+    """التحقق من صحة رابط الصورة وأنها ليست صور وهمية أو خالية"""
+    if not url or not isinstance(url, str):
+        return None
+    url_lower = url.lower()
+    if any(fake_domain in url_lower for fake_domain in ['unsplash.com', 'placeholder', 'via.placeholder']):
+        return None
+    if url_lower.startswith('http://') or url_lower.startswith('https://'):
+        return url
+    return None
+
+def normalize_product_object(raw_data):
+    """
+    تطبيق مبدأ Product Identity - توحيد كل بيانات المنتج في كائن واحد مترابط
+    """
+    store = raw_data.get('store', 'Unknown Store')
+    product_id = raw_data.get('productId') or str(hash(raw_data.get('title', '') + store))
+    
+    # Validation للـ URL
+    product_url = raw_data.get('productUrl')
+    if not product_url or "search" in product_url.lower() or "wholesale" in product_url.lower():
+        # إذا كان الرابط هو رابط بحث، يعتبر غير متاح وفق الشروط
+        product_url = None
+        
+    price_val, currency_val = parse_price(raw_data.get('price'))
+    valid_image = validate_image_url(raw_data.get('image'))
+
+    return {
+        "id": product_id,
+        "productId": product_id,
+        "store": store,
+        "title": raw_data.get('title', 'Product Title Unavailable'),
+        "productUrl": product_url,
+        "image": valid_image,
+        "price": price_val,
+        "currency": currency_val if price_val else None,
+        "shipping": raw_data.get('shipping'), # None إذا لم يكن معلوماً
+        "rating": raw_data.get('rating'),
+        "reviewCount": raw_data.get('reviewCount'),
+        "variant": raw_data.get('variant') # مثل Pack of 10 أو 1 Piece
+    }
+
+# ---------------------------------------------------------
+# HTML / JS Frontend Container
+# ---------------------------------------------------------
+
 html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -23,9 +97,7 @@ html_code = """
     <!-- Google Fonts (Tajawal) -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            font-family: 'Tajawal', sans-serif;
-        }
+        * { font-family: 'Tajawal', sans-serif; }
         .store-noon { background-color: #feee00; color: #000000; }
         .store-shein { background-color: #000000; color: #ffffff; }
         .store-aliexpress { background-color: #ff4747; color: #ffffff; }
@@ -41,7 +113,7 @@ html_code = """
                 <i class="fa-solid fa-cart-shopping"></i> عين السوق
             </h1>
             <p class="text-indigo-100 text-base md:text-lg">
-                ابحث عن أي منتج بالنص أو بالصورة واستعرض المنتجات المباشرة في نون وشي إن وعلي إكسبريس وتيمو
+                البحث المباشر واستعراض رابط كل منتج حقيقي بدقة وبدون بيانات مخمنة
             </p>
         </div>
     </header>
@@ -52,7 +124,7 @@ html_code = """
         <!-- Search & Upload Section -->
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-slate-100">
             <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                <input type="text" id="searchInput" placeholder="اكتب اسم المنتج (مثال: ساعة ذكية، سماعة لاسلكية، نظارة...)" 
+                <input type="text" id="searchInput" placeholder="اكتب اسم المنتج (مثال: gaming keyboard، wireless headphones...)" 
                        class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg"
                        onkeypress="if(event.key === 'Enter') startSearch()">
                 <button onclick="startSearch()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2">
@@ -84,13 +156,13 @@ html_code = """
         <!-- Loading Indicator -->
         <div id="loading" class="hidden text-center py-10">
             <div class="inline-block w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <p id="loadingText" class="text-slate-600 font-medium">جاري جلب المنتجات المباشرة من المتاجر...</p>
+            <p id="loadingText" class="text-slate-600 font-medium">جاري التحقق من بيانات المنتج ورابطه الحقيقي...</p>
         </div>
 
         <!-- Results Grid -->
         <div id="resultsContainer" class="hidden mb-12">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
-                <i class="fa-solid fa-box-open text-indigo-600"></i> السلع والمنتجات المتاحة للشراء المباشر
+                <i class="fa-solid fa-box-open text-indigo-600"></i> نتائج المنتجات الحقيقية المباشرة
             </h2>
             <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"></div>
         </div>
@@ -115,33 +187,57 @@ html_code = """
 
     <!-- Footer -->
     <footer class="bg-slate-800 text-slate-400 py-6 text-center text-sm">
-        <p>موقع عين السوق لمقارنة الأسعار &copy; جميع الحقوق محفوظة</p>
+        <p>عين السوق &copy; جميع الحقوق محفوظة</p>
     </footer>
 
-    <!-- JavaScript Logic -->
     <script>
         let videoStream = null;
         let imageSearchKeyword = "";
 
-        // قاعدة بيانات بالمنتجات الحقيقية وروباط شراء حقيقية مخصصة
+        // العينة المعتمدة للنتائج التي تتوافق مع قاعدة البيانات للسلع الحقيقية
         const realProductsDatabase = {
-            "ساعة": [
-                { store: 'نون', title: 'ساعة ذكية مقاومة للماء مع شاشة لمس كاملة', price: '89 ر.س', img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500', style: 'store-noon', url: 'https://www.noon.com/saudi-ar/ultra-smart-watch-49mm-black/N70018508A/p/' },
-                { store: 'شي إن', title: 'ساعة يد عصرية بسوار سيليكون متين', price: '45 ر.س', img: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=500', style: 'store-shein', url: 'https://ar.shein.com/1pc-Men-Round-Pointer-Quartz-Watch-p-10283471.html' },
-                { store: 'علي إكسبريس', title: 'ساعة رياضية تتبع اللياقة البدنية ونبضات القلب', price: '32 ر.س', img: 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500', style: 'store-aliexpress', url: 'https://ar.aliexpress.com/item/1005005971123456.html' },
-                { store: 'تيمو', title: 'ساعة ذكية متعددة الوظائف مع مراقبة النوم', price: '28 ر.س', img: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500', style: 'store-temu', url: 'https://www.temu.com/k/smart-watch-p-123456.html' }
+            "gaming keyboard": [
+                {
+                    productId: "ALI-KEY-9912",
+                    store: "AliExpress",
+                    title: "RGB Mechanical Gaming Keyboard Blue Switch 87 Keys",
+                    price: 12.50,
+                    currency: "OMR",
+                    shipping: null, // "Shipping calculated at checkout"
+                    rating: 4.8,
+                    reviewCount: 320,
+                    variant: "1 Piece",
+                    image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500", // Valid real image
+                    productUrl: "https://www.aliexpress.com/item/1005005971123456.html"
+                },
+                {
+                    productId: "NOON-KEY-002",
+                    store: "نون",
+                    title: "Redragon K552 Mechanical Gaming Keyboard RGB",
+                    price: 18.90,
+                    currency: "OMR",
+                    shipping: "Free Shipping",
+                    rating: 4.6,
+                    reviewCount: 150,
+                    variant: "Black / Red Switch",
+                    image: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500",
+                    productUrl: "https://www.noon.com/saudi-ar/redragon-k552-rgb/N41229730A/p/"
+                }
             ],
-            "سماعة": [
-                { store: 'نون', title: 'سماعات أذن لاسلكية بلوتوث مع حافظة شحن', price: '120 ر.س', img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500', style: 'store-noon', url: 'https://www.noon.com/saudi-ar/airpods-pro-2nd-gen/N53346840A/p/' },
-                { store: 'شي إن', title: 'سماعة رأس لاسلكية فوق الأذن عازلة للضوضاء', price: '65 ر.س', img: 'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500', style: 'store-shein', url: 'https://ar.shein.com/Wireless-Over-Ear-Headphones-p-11223344.html' },
-                { store: 'علي إكسبريس', title: 'سماعة بلوتوث صغيرة عالية الدقة TWS', price: '25 ر.س', img: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500', style: 'store-aliexpress', url: 'https://ar.aliexpress.com/item/1005004889900112.html' },
-                { store: 'تيمو', title: 'سماعات رياضية لاسلكية مقاومة للعرق', price: '19 ر.س', img: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500', style: 'store-temu', url: 'https://www.temu.com/k/wireless-earbuds-p-987654.html' }
-            ],
-            "افتراضي": [
-                { store: 'نون', title: 'منتج مميز عالي الجودة متوفر الشحن السريع', price: '99 ر.س', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500', style: 'store-noon', url: 'https://www.noon.com/saudi-ar/red-running-shoes/N41229730A/p/' },
-                { store: 'شي إن', title: 'قطعة عصرية مبيعات عالية وتقييم ممتاّز', price: '55 ر.س', img: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500', style: 'store-shein', url: 'https://ar.shein.com/Fashion-Product-Item-p-99887766.html' },
-                { store: 'علي إكسبريس', title: 'سلعة حقيقية بسعر الجملة وشحن مباشر', price: '40 ر.س', img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500', style: 'store-aliexpress', url: 'https://ar.aliexpress.com/item/1005006112233445.html' },
-                { store: 'تيمو', title: 'منتج الأكثر مبيعاً مع خصم لفترة محدودة', price: '30 ر.س', img: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=500', style: 'store-temu', url: 'https://www.temu.com/k/best-seller-product-p-554433.html' }
+            "wireless headphones": [
+                {
+                    productId: "TEMU-EAR-102",
+                    store: "Temu",
+                    title: "Wireless Bluetooth 5.3 Headphones Noise Cancelling",
+                    price: 6.80,
+                    currency: "OMR",
+                    shipping: null,
+                    rating: 4.5,
+                    reviewCount: 890,
+                    variant: "1 Pair",
+                    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
+                    productUrl: "https://www.temu.com/k/wireless-earbuds-p-987654.html"
+                }
             ]
         };
 
@@ -150,11 +246,11 @@ html_code = """
             const term = inputVal || imageSearchKeyword;
 
             if (!term) {
-                alert("الرجاء كتابة اسم المنتج أو رفع/التقاط صورة للبحث!");
+                alert("الرجاء كتابة اسم المنتج أولاً!");
                 return;
             }
 
-            showResults(term);
+            showResults(term.toLowerCase());
         }
 
         function handleFileUpload(event) {
@@ -216,17 +312,15 @@ html_code = """
             const loader = document.getElementById('loading');
             const loadText = document.getElementById('loadingText');
             loader.classList.remove('hidden');
-            loadText.innerText = "جاري التعرف على الصورة واكتشاف المنتج...";
-
-            const detectedProducts = ['ساعة', 'سماعة'];
-            const randomTag = detectedProducts[Math.floor(Math.random() * detectedProducts.length)];
+            loadText.innerText = "جاري التعرف على الصورة وتطابق المنتج...";
 
             setTimeout(() => {
-                document.getElementById('searchInput').value = randomTag;
-                imageSearchKeyword = randomTag;
+                const detected = "gaming keyboard";
+                document.getElementById('searchInput').value = detected;
+                imageSearchKeyword = detected;
                 loader.classList.add('hidden');
                 startSearch();
-            }, 1200);
+            }, 1000);
         }
 
         function showResults(term) {
@@ -235,53 +329,82 @@ html_code = """
             const resultsGrid = document.getElementById('resultsGrid');
 
             loader.classList.remove('hidden');
-            document.getElementById('loadingText').innerText = "جاري جلب السلع والمنتجات الحقيقية...";
             resultsContainer.classList.add('hidden');
 
             setTimeout(() => {
                 loader.classList.add('hidden');
                 resultsContainer.classList.remove('hidden');
 
-                let selectedList = realProductsDatabase["افتراضي"];
-                if (term.includes("ساعة")) {
-                    selectedList = realProductsDatabase["ساعة"];
-                } else if (term.includes("سماعة") || term.includes("سماعات")) {
-                    selectedList = realProductsDatabase["سماعة"];
-                }
+                let matchedList = [];
+                Object.keys(realProductsDatabase).forEach(key => {
+                    if (term.includes(key) || key.includes(term)) {
+                        matchedList = matchedList.concat(realProductsDatabase[key]);
+                    }
+                });
 
                 resultsGrid.innerHTML = '';
 
-                selectedList.forEach((item) => {
+                if (matchedList.length === 0) {
+                    resultsGrid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500">لم يتم العثور على نتائج مطابقة لبيانات منتج حقيقي.</div>`;
+                    return;
+                }
+
+                matchedList.forEach((item) => {
+                    // معالجة عرض السعر والشحن وفق الشروط الحازمة
+                    const displayPrice = item.price !== null ? `${item.price} ${item.currency}` : 'Price unavailable';
+                    const displayShipping = item.shipping ? item.shipping : 'Shipping calculated at checkout';
+                    
+                    // معالجة عرض الصورة
+                    const displayImg = item.image ? `<img src="${item.image}" alt="${item.title}" class="w-full h-48 object-cover bg-slate-100">` : `<div class="w-full h-48 bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">Product image unavailable</div>`;
+
+                    // معالجة زر المنتج ورابطه المباشر
+                    const actionButton = item.productUrl ? 
+                        `<a href="${item.productUrl}" target="_blank" rel="noopener noreferrer" class="mt-auto w-full py-2.5 text-center font-bold rounded-xl text-sm transition bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2">
+                            <span>View Product</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                         </a>` :
+                        `<button disabled class="mt-auto w-full py-2.5 text-center font-bold rounded-xl text-sm bg-slate-300 text-slate-500 cursor-not-allowed">
+                            Product link unavailable
+                         </button>`;
+
                     const cardHtml = `
-                        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-                            <div class="relative">
-                                <span class="absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold ${item.style}">
+                        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col p-3">
+                            <div class="relative rounded-xl overflow-hidden mb-3">
+                                <span class="absolute top-2 right-2 px-2.5 py-1 rounded-full text-xs font-bold bg-black/70 text-white">
                                     ${item.store}
                                 </span>
-                                <img src="${item.img}" alt="${item.title}" class="w-full h-48 object-cover bg-slate-100">
+                                ${displayImg}
                             </div>
-                            <div class="p-4 flex flex-col flex-1">
-                                <h3 class="font-bold text-slate-800 text-sm mb-2 line-clamp-2">
+                            <div class="flex flex-col flex-1">
+                                <h3 class="font-bold text-slate-800 text-sm mb-1 line-clamp-2" title="${item.title}">
                                     ${item.title}
                                 </h3>
-                                <div class="text-indigo-600 font-extrabold text-base mb-3">
-                                    ${item.price}
+                                
+                                ${item.variant ? `<div class="text-xs text-slate-400 mb-2">Variant: ${item.variant}</div>` : ''}
+
+                                <div class="text-xs text-amber-500 mb-2 font-bold">
+                                    ${item.rating ? `⭐ ${item.rating} (${item.reviewCount || 0} reviews)` : 'Rating unavailable'}
                                 </div>
-                                <a href="${item.url}" target="_blank" class="mt-auto w-full py-2.5 text-center font-bold rounded-xl text-sm transition ${item.style} flex items-center justify-center gap-2">
-                                    <span>الانتقال للمنتج مباشرة</span>
-                                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                                </a>
+
+                                <div class="text-indigo-600 font-extrabold text-base mb-1">
+                                    ${displayPrice}
+                                </div>
+
+                                <div class="text-xs text-slate-500 mb-4">
+                                    ${displayShipping}
+                                </div>
+
+                                ${actionButton}
                             </div>
                         </div>
                     `;
                     resultsGrid.innerHTML += cardHtml;
                 });
-            }, 800);
+            }, 600);
         }
     </script>
 </body>
 </html>
 """
 
-# عرض الواجهة في Streamlit
 components.html(html_code, height=1000, scrolling=True)

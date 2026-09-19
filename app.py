@@ -1,255 +1,602 @@
-import streamlit as st
-import streamlit.components.v1 as components
-
-# إعدادات الصفحة في Streamlit
-st.set_page_config(
-    page_title="PriceFinder AI 2.0 Pro",
-    page_icon="🔍",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-
-# كود HTML و JavaScript للبحث المباشر عن صور المنتجات
-html_code = """
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" class="dark">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PriceFinder AI 2.0 Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 50: '#eef2ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرك بحث المنتجات الذكي | نون، شي إن، علي اكسبريس، تيمو</title>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #06b6d4;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            
+            /* Store Colors */
+            --noon-color: #feee00;
+            --noon-text: #000000;
+            --shein-color: #000000;
+            --shein-text: #ffffff;
+            --aliexpress-color: #ff4747;
+            --aliexpress-text: #ffffff;
+            --temu-color: #fb7701;
+            --temu-text: #ffffff;
         }
-      }
-    }
-  </script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
-    body { font-family: 'Tajawal', sans-serif; }
-  </style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 50px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Search Section */
+        .search-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            margin-top: -30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+
+        .search-input-group input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input-group input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-camera {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            border: 2px dashed #cbd5e1;
+        }
+
+        .btn-camera:hover {
+            background-color: #e2e8f0;
+            border-color: var(--primary);
+        }
+
+        /* Image Preview Area */
+        .image-preview-container {
+            display: none;
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-top: 10px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+        }
+
+        .image-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-img-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Camera Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        #video-feed {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            margin-bottom: 15px;
+        }
+
+        /* Quick Links to Stores */
+        .store-quick-links {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .store-card {
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        .store-card i {
+            font-size: 1.8rem;
+        }
+
+        .store-noon { background-color: var(--noon-color); color: var(--noon-text); }
+        .store-shein { background-color: var(--shein-color); color: var(--shein-text); }
+        .store-aliexpress { background-color: var(--aliexpress-color); color: var(--aliexpress-text); }
+        .store-temu { background-color: var(--temu-color); color: var(--temu-text); }
+
+        /* Results Section */
+        .results-section {
+            margin-top: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .product-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #f1f5f9;
+            position: relative;
+        }
+
+        .product-info {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .product-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            height: 2.8em;
+        }
+
+        .product-price {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+        }
+
+        .product-btn {
+            margin-top: auto;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: block;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .search-input-group {
+                flex-direction: column;
+            }
+            header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen pb-16">
+<body>
 
-  <!-- Header -->
-  <header class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700">
-    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-2 text-indigo-400 font-extrabold text-xl">
-        <span>🔍 PriceFinder AI</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <select id="currencySelect" onchange="updateCurrency()" class="bg-slate-700 text-white text-sm font-bold rounded-lg px-3 py-1.5 border border-slate-600 outline-none cursor-pointer">
-          <option value="OMR" selected>OMR (ر.ع.)</option>
-          <option value="AED">AED (د.إ)</option>
-          <option value="SAR">SAR (ر.س)</option>
-          <option value="USD">USD ($)</option>
-          <option value="EUR">EUR (€)</option>
-        </select>
-      </div>
-    </div>
-  </header>
+    <header>
+        <div class="container">
+            <h1><i class="fa-solid fa-bag-shopping"></i> محرك البحث المقارن للمنتجات</h1>
+            <p>ابحث عن أي منتج بالنص أو بالصورة وقارن النتائج مباشرة في نون، شي إن، علي اكسبريس، وتيمو</p>
+        </div>
+    </header>
 
-  <!-- Hero Section -->
-  <main class="max-w-7xl mx-auto px-4 pt-10">
-    <section class="text-center space-y-4 max-w-3xl mx-auto mb-10">
-      <h1 class="text-3xl sm:text-5xl font-black text-white leading-tight">
-        قارن أسعار المتاجر فوراً بالذكاء الاصطناعي
-      </h1>
-      <p class="text-slate-400 text-sm sm:text-base">
-        بحث شامل في Noon, AliExpress, Temu, و SHEIN مع صور مطابقة لنوع المنتج.
-      </p>
-
-      <form onsubmit="runSearch(event)" class="flex gap-2 bg-slate-800 p-2 rounded-2xl border border-slate-700 shadow-2xl">
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="اكتب اسم أي منتج للبحث عنه (مثال: ساعة، آيفون، حذاء...)..."
-          class="w-full bg-transparent text-white px-4 py-2 outline-none text-base"
-        />
-        <button
-          type="submit"
-          class="bg-indigo-600 hover:bg-indigo-700 font-bold text-white px-6 py-3 rounded-xl transition shrink-0 cursor-pointer"
-        >
-          بحث
-        </button>
-      </form>
-    </section>
-
-    <!-- Loading UI -->
-    <div id="loadingUI" class="hidden text-center py-16 space-y-3">
-      <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري جلب صور المنتجات المطابقة والأسعار...</p>
-    </div>
-
-    <!-- Results Container -->
-    <div id="resultsUI" class="hidden space-y-6">
-      <div class="border-b border-slate-800 pb-4 flex justify-between items-center flex-wrap gap-2">
-        <h2 id="resultTitle" class="text-2xl font-bold"></h2>
-        <span class="text-xs text-emerald-400 font-bold bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800">
-          تم العثور على 4 متاجر
-        </span>
-      </div>
-
-      <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
-    </div>
-  </main>
-
-  <script>
-    const RATES = { OMR: 1.0, AED: 9.55, SAR: 9.75, USD: 2.60, EUR: 2.40 };
-    const SYMBOLS = { OMR: 'ر.ع.', AED: 'د.إ', SAR: 'ر.س', USD: '$', EUR: '€' };
-
-    let lastQuery = '';
-
-    function getBasePriceOMR(query) {
-      const q = query.toLowerCase();
-      if (q.includes('ساعة') || q.includes('watch')) return 12.5;
-      if (q.includes('حذاء') || q.includes('شوز') || q.includes('shoe')) return 9.0;
-      if (q.includes('آيفون') || q.includes('هاتف') || q.includes('phone') || q.includes('جوال')) return 290.0;
-      if (q.includes('حقيبة') || q.includes('شنطة') || q.includes('bag')) return 6.5;
-      if (q.includes('عطر') || q.includes('perfume')) return 14.0;
-      if (q.includes('لابتوب') || q.includes('كمبيوتر') || q.includes('laptop')) return 180.0;
-      if (q.includes('سماعة') || q.includes('headphone') || q.includes('airpods')) return 8.5;
-      return 7.5;
-    }
-
-    function runSearch(e) {
-      if (e) e.preventDefault();
-      const query = document.getElementById('searchInput').value.trim();
-      if (!query) return;
-
-      lastQuery = query;
-      document.getElementById('resultsUI').classList.add('hidden');
-      document.getElementById('loadingUI').classList.remove('hidden');
-
-      setTimeout(() => {
-        displayResults();
-        document.getElementById('loadingUI').classList.add('hidden');
-        document.getElementById('resultsUI').classList.remove('hidden');
-      }, 500);
-    }
-
-    function updateCurrency() {
-      if (lastQuery) displayResults();
-    }
-
-    function displayResults() {
-      const currency = document.getElementById('currencySelect').value;
-      const baseOMR = getBasePriceOMR(lastQuery);
-      const rate = RATES[currency] || 1.0;
-      const sym = SYMBOLS[currency];
-      
-      const encodedQuery = encodeURIComponent(lastQuery);
-
-      document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
-
-      // مولّد صور ذكي ومطابق تماماً للكلمة المبحوث عنها بأساليب عرض مختلفة لكل متجر
-      let stores = [
-        { 
-          store: 'Noon', 
-          title: `${lastQuery} - الإصدار الأصلي (نون)`, 
-          basePrice: baseOMR * 1.15, 
-          shipOMR: 0, 
-          score: 98, 
-          url: `https://www.noon.com/oman-ar/search/?q=${encodedQuery}`,
-          imgUrl: `https://image.pollinations.ai/prompt/professional%20studio%20product%20photo%20of%20${encodedQuery}%20isolated%20on%20clean%20background?width=400&height=400&seed=11`
-        },
-        { 
-          store: 'AliExpress', 
-          title: `${lastQuery} - خيار المصنع (علي إكسبريس)`, 
-          basePrice: baseOMR * 0.90, 
-          shipOMR: 0.80, 
-          score: 94, 
-          url: `https://www.aliexpress.com/w/wholesale-${encodedQuery}.html`,
-          imgUrl: `https://image.pollinations.ai/prompt/high%20quality%20tech%20product%20shot%20of%20${encodedQuery}?width=400&height=400&seed=22`
-        },
-        { 
-          store: 'Temu', 
-          title: `${lastQuery} - الصفقة الاقتصادية (تيمو)`, 
-          basePrice: baseOMR * 0.70, 
-          shipOMR: 0, 
-          score: 88, 
-          url: `https://www.temu.com/search_result.html?search_key=${encodedQuery}`,
-          imgUrl: `https://image.pollinations.ai/prompt/modern%20commercial%20product%20photo%20of%20${encodedQuery}?width=400&height=400&seed=33`
-        },
-        { 
-          store: 'SHEIN', 
-          title: `${lastQuery} - تشكيلة شي إن العصري`, 
-          basePrice: baseOMR * 0.80, 
-          shipOMR: 0.50, 
-          score: 82, 
-          url: `https://www.shein.com/pdsearch/${encodedQuery}`,
-          imgUrl: `https://image.pollinations.ai/prompt/lifestyle%20fashion%20product%20photo%20of%20${encodedQuery}?width=400&height=400&seed=44`
-        }
-      ];
-
-      stores.forEach(s => {
-        s.finalPrice = s.basePrice * rate;
-        s.finalShip = s.shipOMR * rate;
-        s.totalCost = s.finalPrice + s.finalShip;
-      });
-
-      const bestStore = stores.reduce((max, obj) => (obj.score > max.score) ? obj : max, stores[0]);
-      const cheapestStore = stores.reduce((min, obj) => (obj.totalCost < min.totalCost) ? obj : min, stores[0]);
-
-      const grid = document.getElementById('cardsGrid');
-      grid.innerHTML = '';
-
-      stores.forEach((item) => {
-        const shippingText = item.shipOMR === 0 ? 'مجاني' : `${item.finalShip.toFixed(2)} ${sym}`;
-
-        let badgesHtml = '';
-        if (item.store === bestStore.store) {
-          badgesHtml += `<span class="absolute top-2 right-2 bg-yellow-500 text-yellow-950 text-xs font-black px-2.5 py-1 rounded-md z-10 shadow-lg border border-yellow-400">⭐ الأفضل</span>`;
-        }
-        if (item.store === cheapestStore.store) {
-          badgesHtml += `<span class="absolute top-2 left-2 bg-emerald-500 text-emerald-950 text-xs font-black px-2.5 py-1 rounded-md z-10 shadow-lg border border-emerald-400">💰 الأرخص</span>`;
-        }
-        
-        grid.innerHTML += `
-          <div class="bg-slate-800 rounded-2xl border border-slate-700 p-4 flex flex-col justify-between shadow-lg hover:border-indigo-500 transition relative overflow-hidden">
-            <div>
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold px-2.5 py-1 bg-indigo-950 text-indigo-300 rounded-md border border-indigo-800">${item.store}</span>
-                <span class="text-xs text-slate-300 font-bold">تقييم ${item.score}%</span>
-              </div>
-              
-              <div class="relative aspect-square rounded-xl bg-slate-900 overflow-hidden mb-3 border border-slate-700">
-                ${badgesHtml}
-                <img 
-                  src="${item.imgUrl}" 
-                  alt="${item.title}" 
-                  class="w-full h-full object-cover hover:scale-105 transition duration-500" 
-                  loading="eager" 
-                />
-              </div>
-              
-              <h3 class="font-bold text-sm text-white line-clamp-2 mb-2">${item.title}</h3>
+    <div class="container">
+        <!-- Search Box -->
+        <div class="search-box">
+            <div class="search-input-group">
+                <input type="text" id="search-input" placeholder="اكتب اسم المنتج (مثال: سماعات لاسلكية، فستان، ساعة...)" onkeypress="handleKeyPress(event)">
+                <button class="btn btn-primary" onclick="executeSearch()"><i class="fa-solid fa-magnifying-glass"></i> بحث</button>
             </div>
             
-            <div class="pt-3 border-t border-slate-700">
-              <div class="text-2xl font-black text-white mb-1">${item.finalPrice.toFixed(2)} ${sym}</div>
-              <div class="flex justify-between items-center mb-3">
-                <div class="text-xs text-slate-400">الشحن: ${shippingText}</div>
-                <div class="text-xs text-indigo-300 font-bold">الإجمالي: ${item.totalCost.toFixed(2)} ${sym}</div>
-              </div>
-              <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block text-center w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition shadow-md hover:shadow-indigo-500/20">
-                شراء الآن من ${item.store} ↗
-              </a>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <label for="image-upload" class="btn btn-camera">
+                    <i class="fa-solid fa-image"></i> رفع صورة من الجهاز
+                </label>
+                <input type="file" id="image-upload" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+
+                <button class="btn btn-camera" onclick="openCamera()">
+                    <i class="fa-solid fa-camera"></i> التقاط صورة بالكاميرا
+                </button>
             </div>
-          </div>
-        `;
-      });
-    }
-  </script>
+
+            <!-- Image Preview -->
+            <div class="image-preview-container" id="preview-container">
+                <button class="remove-img-btn" onclick="clearImage()">&times;</button>
+                <img id="preview-img" src="" alt="معاينة الصورة">
+            </div>
+        </div>
+
+        <!-- Quick Links / Direct Search Buttons -->
+        <div class="results-section">
+            <h2 class="section-title"><i class="fa-solid fa-bolt"></i> البحث المباشر في المتاجر الأربعة</h2>
+            <div class="store-quick-links">
+                <a id="link-noon" href="https://www.noon.com" target="_blank" class="store-card store-noon">
+                    <i class="fa-solid fa-store"></i> نون (Noon)
+                </a>
+                <a id="link-shein" href="https://www.shein.com" target="_blank" class="store-card store-shein">
+                    <i class="fa-solid fa-shirt"></i> شي إن (SHEIN)
+                </a>
+                <a id="link-aliexpress" href="https://www.aliexpress.com" target="_blank" class="store-card store-aliexpress">
+                    <i class="fa-solid fa-truck-fast"></i> علي اكسبريس
+                </a>
+                <a id="link-temu" href="https://www.temu.com" target="_blank" class="store-card store-temu">
+                    <i class="fa-solid fa-tags"></i> تيمو (Temu)
+                </a>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loading-text">جاري جلب النتائج والمقارنة...</p>
+        </div>
+
+        <!-- Search Results Grid -->
+        <div class="results-section" id="results-container" style="display: none;">
+            <h2 class="section-title"><i class="fa-solid fa-list-check"></i> النتائج المقترحة للمقارنة</h2>
+            <div class="results-grid" id="results-grid"></div>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div class="modal" id="camera-modal">
+        <div class="modal-content">
+            <h3>التقط صورة للمنتج</h3>
+            <video id="video-feed" autoplay playsinline></video>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-primary" onclick="capturePhoto()"><i class="fa-solid fa-camera"></i> التقاط</button>
+                <button class="btn btn-camera" onclick="closeCamera()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStream = null;
+        let selectedKeyword = "";
+
+        // Auto Update Direct Search Links
+        function updateStoreLinks(query) {
+            const encodedQuery = encodeURIComponent(query);
+            document.getElementById('link-noon').href = `https://www.noon.com/search/?q=${encodedQuery}`;
+            document.getElementById('link-shein').href = `https://ar.shein.com/pdsearch/${encodedQuery}/`;
+            document.getElementById('link-aliexpress').href = `https://ar.aliexpress.com/w/wholesale-${encodedQuery}.html`;
+            document.getElementById('link-temu').href = `https://www.temu.com/search_result.html?search_key=${encodedQuery}`;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                executeSearch();
+            }
+        }
+
+        function executeSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query && !selectedKeyword) {
+                alert('الرجاء إدخال اسم المنتج أو اختيار صورة للبحث!');
+                return;
+            }
+
+            const searchTerm = query || selectedKeyword;
+            updateStoreLinks(searchTerm);
+            renderResults(searchTerm);
+        }
+
+        // Image Handling
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    showPreview(e.target.result);
+                    processImageSearch();
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function showPreview(imageSrc) {
+            document.getElementById('preview-img').src = imageSrc;
+            document.getElementById('preview-container').style.display = 'block';
+        }
+
+        function clearImage() {
+            document.getElementById('preview-container').style.display = 'none';
+            document.getElementById('preview-img').src = '';
+            document.getElementById('image-upload').value = '';
+            selectedKeyword = "";
+        }
+
+        // Camera Logic
+        async function openCamera() {
+            const modal = document.getElementById('camera-modal');
+            const video = document.getElementById('video-feed');
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = currentStream;
+                modal.style.display = 'flex';
+            } catch (err) {
+                alert('تعذر الوصول إلى الكاميرا: ' + err.message);
+            }
+        }
+
+        function closeCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('camera-modal').style.display = 'none';
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('video-feed');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/jpeg');
+            showPreview(imageData);
+            closeCamera();
+            processImageSearch();
+        }
+
+        // Simulate Image Recognition AI
+        function processImageSearch() {
+            document.getElementById('loading-spinner').style.display = 'block';
+            document.getElementById('loading-text').innerText = 'جاري تحليل الصورة والتعرف على المنتج...';
+            document.getElementById('results-container').style.display = 'none';
+
+            // Simulation of AI detection tags
+            const mockTags = ['ساعة ذكية', 'سماعات بلوتوث', 'حقيبة ظهر', 'نظارات شمسية', 'قميص رجالي'];
+            const detectedTag = mockTags[Math.floor(Math.random() * mockTags.length)];
+
+            setTimeout(() => {
+                document.getElementById('search-input').value = detectedTag;
+                selectedKeyword = detectedTag;
+                executeSearch();
+            }, 1500);
+        }
+
+        // Display Demo Comparison Data
+        function renderResults(query) {
+            const spinner = document.getElementById('loading-spinner');
+            const container = document.getElementById('results-container');
+            const grid = document.getElementById('results-grid');
+
+            spinner.style.display = 'block';
+            document.getElementById('loading-text').innerText = 'جاري البحث في المتغيرات والألوان بجميع المتاجر...';
+            container.style.display = 'none';
+
+            setTimeout(() => {
+                spinner.style.display = 'none';
+                container.style.display = 'block';
+
+                const stores = [
+                    { name: 'نون', class: 'store-noon', badgeBg: 'var(--noon-color)', badgeText: 'var(--noon-text)', link: `https://www.noon.com/search/?q=${encodeURIComponent(query)}` },
+                    { name: 'شي إن', class: 'store-shein', badgeBg: 'var(--shein-color)', badgeText: 'var(--shein-text)', link: `https://ar.shein.com/pdsearch/${encodeURIComponent(query)}/` },
+                    { name: 'علي اكسبريس', class: 'store-aliexpress', badgeBg: 'var(--aliexpress-color)', badgeText: 'var(--aliexpress-text)', link: `https://ar.aliexpress.com/w/wholesale-${encodeURIComponent(query)}.html` },
+                    { name: 'تيمو', class: 'store-temu', badgeBg: 'var(--temu-color)', badgeText: 'var(--temu-text)', link: `https://www.temu.com/search_result.html?search_key=${encodeURIComponent(query)}` }
+                ];
+
+                const placeholderImages = [
+                    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
+                    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
+                    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
+                    'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400'
+                ];
+
+                grid.innerHTML = '';
+
+                stores.forEach((store, index) => {
+                    const price = (Math.random() * 80 + 20).toFixed(2);
+                    const productCard = `
+                        <div class="product-card">
+                            <span class="product-badge" style="background:${store.badgeBg}; color:${store.badgeText};">${store.name}</span>
+                            <img class="product-img" src="${placeholderImages[index]}" alt="${query}">
+                            <div class="product-info">
+                                <h3 class="product-title">${query} - أفضل الخيارات المتوفرة في ${store.name}</h3>
+                                <div class="product-price">${price} $</div>
+                                <a href="${store.link}" target="_blank" class="product-btn ${store.class}">
+                                    عرض المنتج في ${store.name} <i class="fa-solid fa-arrow-left"></i>
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    grid.innerHTML += productCard;
+                });
+
+            }, 1000);
+        }
+    </script>
 </body>
 </html>
-"""
-
-# عرض الواجهة كاملة داخل Streamlit
-components.html(html_code, height=900, scrolling=True)

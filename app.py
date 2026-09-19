@@ -1,3 +1,16 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# إعدادات الصفحة في Streamlit
+st.set_page_config(
+    page_title="PriceFinder AI 2.0 Pro",
+    page_icon="🔍",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# كود HTML و JavaScript المكتمل والمصحح
+html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="dark">
 <head>
@@ -25,13 +38,13 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-16">
 
   <!-- Header -->
-  <header className="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700">
+  <header class="sticky top-0 z-50 bg-slate-800/90 backdrop-blur-md border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-2 text-indigo-400 font-extrabold text-xl">
         <span>🔍 PriceFinder AI</span>
       </div>
       <div class="flex items-center gap-3">
-        <select id="currencySelect" onchange="updateCurrency()" class="bg-slate-700 text-white text-sm font-bold rounded-lg px-3 py-1.5 border border-slate-600 outline-none">
+        <select id="currencySelect" onchange="updateCurrency()" class="bg-slate-700 text-white text-sm font-bold rounded-lg px-3 py-1.5 border border-slate-600 outline-none cursor-pointer">
           <option value="OMR">OMR (ر.ع.)</option>
           <option value="AED">AED (د.إ)</option>
           <option value="SAR">SAR (ر.س)</option>
@@ -61,7 +74,7 @@
         />
         <button
           type="submit"
-          class="bg-indigo-600 hover:bg-indigo-700 font-bold text-white px-6 py-3 rounded-xl transition shrink-0"
+          class="bg-indigo-600 hover:bg-indigo-700 font-bold text-white px-6 py-3 rounded-xl transition shrink-0 cursor-pointer"
         >
           بحث
         </button>
@@ -143,16 +156,18 @@
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
       const stores = [
-        { store: 'Noon', title: `${lastQuery} - الاصلي الضمان العالي`, price: (base * 1.1 * rate).toFixed(2), ship: 'مجاني', score: 98, url: 'https://www.noon.com' },
-        { store: 'AliExpress', title: `منتج ${lastQuery} شحن سريع`, price: (base * 0.85 * rate).toFixed(2), ship: `3.50 ${sym}`, score: 94, url: 'https://www.aliexpress.com' },
-        { store: 'Temu', title: `عرض خاص: ${lastQuery} سعر اقتصادي`, price: (base * 0.65 * rate).toFixed(2), ship: 'مجاني', score: 88, url: 'https://www.temu.com' },
-        { store: 'SHEIN', title: `${lastQuery} إكسسوارات الموضة`, price: (base * 0.72 * rate).toFixed(2), ship: `2.00 ${sym}`, score: 82, url: 'https://www.shein.com' }
+        { store: 'Noon', title: `${lastQuery} - الأصلي الضمان العالي`, price: (base * 1.1 * rate).toFixed(2), shipUSD: 0, score: 98, url: 'https://www.noon.com' },
+        { store: 'AliExpress', title: `منتج ${lastQuery} شحن سريع`, price: (base * 0.85 * rate).toFixed(2), shipUSD: 3.50, score: 94, url: 'https://www.aliexpress.com' },
+        { store: 'Temu', title: `عرض خاص: ${lastQuery} سعر اقتصادي`, price: (base * 0.65 * rate).toFixed(2), shipUSD: 0, score: 88, url: 'https://www.temu.com' },
+        { store: 'SHEIN', title: `${lastQuery} إكسسوارات الموضة`, price: (base * 0.72 * rate).toFixed(2), shipUSD: 2.00, score: 82, url: 'https://www.shein.com' }
       ];
 
       const grid = document.getElementById('cardsGrid');
       grid.innerHTML = '';
 
       stores.forEach(item => {
+        const shippingText = item.shipUSD === 0 ? 'مجاني' : `${(item.shipUSD * rate).toFixed(2)} ${sym}`;
+        
         grid.innerHTML += `
           <div class="bg-slate-800 rounded-2xl border border-slate-700 p-4 flex flex-col justify-between shadow-lg hover:border-indigo-500 transition">
             <div>
@@ -161,14 +176,14 @@
                 <span class="text-xs text-emerald-400 font-bold">تطابق ${item.score}%</span>
               </div>
               <div class="aspect-square rounded-xl bg-slate-700 overflow-hidden mb-3">
-                <img src="${meta.img}" class="w-full h-full object-cover" />
+                <img src="${meta.img}" alt="${item.title}" class="w-full h-full object-cover" />
               </div>
               <h3 class="font-bold text-sm text-white line-clamp-2 mb-2">${item.title}</h3>
             </div>
             <div class="pt-3 border-t border-slate-700">
               <div class="text-2xl font-black text-white mb-1">${item.price} ${sym}</div>
-              <div class="text-xs text-slate-400 mb-3">الشحن: ${item.ship}</div>
-              <a href="${item.url}" target="_blank" class="block text-center w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition">
+              <div class="text-xs text-slate-400 mb-3">الشحن: ${shippingText}</div>
+              <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block text-center w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition">
                 رابط الشراء المباشر
               </a>
             </div>
@@ -179,3 +194,7 @@
   </script>
 </body>
 </html>
+"""
+
+# عرض الواجهة كاملة داخل Streamlit
+components.html(html_code, height=900, scrolling=True)

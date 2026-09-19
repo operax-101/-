@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# كود HTML و JavaScript المكتمل مع الصور الديناميكية وشارات الأفضل والأرخص
+# كود HTML و JavaScript المكتمل
 html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" class="dark">
@@ -84,7 +84,7 @@ html_code = """
     <!-- Loading UI -->
     <div id="loadingUI" class="hidden text-center py-16 space-y-3">
       <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري الاستعلام وتوليد الصور والمقارنة...</p>
+      <p id="loadingText" class="text-indigo-400 font-bold animate-pulse">جاري جلب المنتجات المباشرة وتجهيز روابط الشراء...</p>
     </div>
 
     <!-- Results Container -->
@@ -130,7 +130,7 @@ html_code = """
         displayResults();
         document.getElementById('loadingUI').classList.add('hidden');
         document.getElementById('resultsUI').classList.remove('hidden');
-      }, 1000);
+      }, 800);
     }
 
     function updateCurrency() {
@@ -143,15 +143,48 @@ html_code = """
       const rate = RATES[currency] || 1;
       const sym = SYMBOLS[currency];
       
-      const encodedQuery = encodeURIComponent(lastQuery + ' product clean background');
+      const encodedQuery = encodeURIComponent(lastQuery);
 
       document.getElementById('resultTitle').innerText = `نتائج البحث عن: "${lastQuery}"`;
 
+      // إعداد بيانات المتاجر مع إدراج روابط البحث المباشرة للمنتج
       let stores = [
-        { store: 'Noon', title: `${lastQuery} - ضمان الوكيل الأصلي`, basePrice: baseUSD * 1.1, shipUSD: 0, score: 98, imgSeed: 10, url: 'https://www.noon.com' },
-        { store: 'AliExpress', title: `منتج ${lastQuery} شحن دولي`, basePrice: baseUSD * 0.85, shipUSD: 3.50, score: 94, imgSeed: 20, url: 'https://www.aliexpress.com' },
-        { store: 'Temu', title: `عرض ترويجي: ${lastQuery}`, basePrice: baseUSD * 0.65, shipUSD: 0, score: 88, imgSeed: 30, url: 'https://www.temu.com' },
-        { store: 'SHEIN', title: `${lastQuery} الموضة والترند`, basePrice: baseUSD * 0.72, shipUSD: 2.00, score: 82, imgSeed: 40, url: 'https://www.shein.com' }
+        { 
+          store: 'Noon', 
+          title: `${lastQuery} - تسوق مباشر من نون`, 
+          basePrice: baseUSD * 1.1, 
+          shipUSD: 0, 
+          score: 98, 
+          imgSeed: 101, 
+          url: `https://www.noon.com/search/?q=${encodedQuery}` 
+        },
+        { 
+          store: 'AliExpress', 
+          title: `منتج ${lastQuery} - علي إكسبريس`, 
+          basePrice: baseUSD * 0.85, 
+          shipUSD: 3.50, 
+          score: 94, 
+          imgSeed: 202, 
+          url: `https://www.aliexpress.com/w/wholesale-${encodedQuery}.html` 
+        },
+        { 
+          store: 'Temu', 
+          title: `${lastQuery} - صفقات تيمو الاقتصادية`, 
+          basePrice: baseUSD * 0.65, 
+          shipUSD: 0, 
+          score: 88, 
+          imgSeed: 303, 
+          url: `https://www.temu.com/search_result.html?search_key=${encodedQuery}` 
+        },
+        { 
+          store: 'SHEIN', 
+          title: `${lastQuery} - تشكيلة شي إن`, 
+          basePrice: baseUSD * 0.72, 
+          shipUSD: 2.00, 
+          score: 82, 
+          imgSeed: 404, 
+          url: `https://www.shein.com/pdsearch/${encodedQuery}` 
+        }
       ];
 
       stores.forEach(s => {
@@ -169,7 +202,9 @@ html_code = """
       stores.forEach(item => {
         const shippingText = item.shipUSD === 0 ? 'مجاني' : `${item.finalShip.toFixed(2)} ${sym}`;
         
-        const imgUrl = `https://image.pollinations.ai/prompt/${encodedQuery}?width=400&height=400&nologo=true&seed=${item.imgSeed}`;
+        // جلب صورة المنتج بدقة عالية وبشكل مباشر يطابق اسم المنتج
+        const imgUrl = `https://source.unsplash.com/400x400/?${encodedQuery}&sig=${item.imgSeed}`;
+        const fallbackImg = `https://image.pollinations.ai/prompt/${encodedQuery}%20product%20photo?width=400&height=400&nologo=true&seed=${item.imgSeed}`;
 
         let badgesHtml = '';
         if (item.store === bestStore.store) {
@@ -189,7 +224,13 @@ html_code = """
               
               <div class="relative aspect-square rounded-xl bg-slate-700 overflow-hidden mb-3">
                 ${badgesHtml}
-                <img src="${imgUrl}" alt="${item.title}" class="w-full h-full object-cover hover:scale-105 transition duration-500" loading="lazy" />
+                <img 
+                  src="${imgUrl}" 
+                  onerror="this.onerror=null; this.src='${fallbackImg}';" 
+                  alt="${item.title}" 
+                  class="w-full h-full object-cover hover:scale-105 transition duration-500" 
+                  loading="lazy" 
+                />
               </div>
               
               <h3 class="font-bold text-sm text-white line-clamp-2 mb-2">${item.title}</h3>
@@ -202,7 +243,7 @@ html_code = """
                 <div class="text-xs text-indigo-300 font-bold">الإجمالي: ${item.totalCost.toFixed(2)} ${sym}</div>
               </div>
               <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block text-center w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition">
-                شراء الآن
+                شراء الآن من ${item.store} ↗
               </a>
             </div>
           </div>

@@ -1,3 +1,15 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# إعدادات الصفحة
+st.set_page_config(
+    page_title="عين السوق | محرك البحث الذكي",
+    page_icon="🛍️",
+    layout="wide"
+)
+
+# كود HTML و JavaScript الخاص بالموقع
+html_code = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -29,7 +41,7 @@
                 <i class="fa-solid fa-cart-shopping"></i> عين السوق
             </h1>
             <p class="text-indigo-100 text-base md:text-lg">
-                ابحث عن أي منتج بالنص أو بالصورة وقارن النتائج فوراً بين نون، شي إن، علي إكسبريس، وتيمو
+                ابحث عن أي منتج بالنص أو بالصورة وقارن النتائج فوراً بين نون وشي إن وعلي إكسبريس وتيمو
             </p>
         </div>
     </header>
@@ -132,16 +144,14 @@
         let videoStream = null;
         let imageSearchKeyword = "";
 
-        // تحديث روابط البحث المباشرة
         function updateStoreLinks(term) {
             const encoded = encodeURIComponent(term);
-            document.getElementById('btnNoon').href = `https://www.noon.com/search/?q=${encoded}`;
-            document.getElementById('btnShein').href = `https://ar.shein.com/pdsearch/${encoded}/`;
-            document.getElementById('btnAliexpress').href = `https://ar.aliexpress.com/w/wholesale-${encoded}.html`;
-            document.getElementById('btnTemu').href = `https://www.temu.com/search_result.html?search_key=${encoded}`;
+            document.getElementById('btnNoon').href = 'https://www.noon.com/search/?q=' + encoded;
+            document.getElementById('btnShein').href = 'https://ar.shein.com/pdsearch/' + encoded + '/';
+            document.getElementById('btnAliexpress').href = 'https://ar.aliexpress.com/w/wholesale-' + encoded + '.html';
+            document.getElementById('btnTemu').href = 'https://www.temu.com/search_result.html?search_key=' + encoded;
         }
 
-        // بدء تنفيذ البحث
         function startSearch() {
             const inputVal = document.getElementById('searchInput').value.trim();
             const term = inputVal || imageSearchKeyword;
@@ -155,7 +165,6 @@
             showResults(term);
         }
 
-        // معالجة رفع الملفات
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
@@ -180,7 +189,6 @@
             imageSearchKeyword = "";
         }
 
-        // فتح الكاميرا
         async function openCamera() {
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -212,7 +220,6 @@
             analyzeImageMock();
         }
 
-        // محاكاة التعرف على الصورة
         function analyzeImageMock() {
             const loader = document.getElementById('loading');
             const loadText = document.getElementById('loadingText');
@@ -230,7 +237,6 @@
             }, 1200);
         }
 
-        // عرض بطاقات النتائج
         function showResults(term) {
             const loader = document.getElementById('loading');
             const resultsContainer = document.getElementById('resultsContainer');
@@ -245,10 +251,10 @@
                 resultsContainer.classList.remove('hidden');
 
                 const stores = [
-                    { name: 'نون', style: 'store-noon', url: `https://www.noon.com/search/?q=${encodeURIComponent(term)}` },
-                    { name: 'شي إن', style: 'store-shein', url: `https://ar.shein.com/pdsearch/${encodeURIComponent(term)}/` },
-                    { name: 'علي إكسبريس', style: 'store-aliexpress', url: `https://ar.aliexpress.com/w/wholesale-${encodeURIComponent(term)}.html` },
-                    { name: 'تيمو', style: 'store-temu', url: `https://www.temu.com/search_result.html?search_key=${encodeURIComponent(term)}` }
+                    { name: 'نون', style: 'store-noon', url: 'https://www.noon.com/search/?q=' + encodeURIComponent(term) },
+                    { name: 'شي إن', style: 'store-shein', url: 'https://ar.shein.com/pdsearch/' + encodeURIComponent(term) + '/' },
+                    { name: 'علي إكسبريس', style: 'store-aliexpress', url: 'https://ar.aliexpress.com/w/wholesale-' + encodeURIComponent(term) + '.html' },
+                    { name: 'تيمو', style: 'store-temu', url: 'https://www.temu.com/search_result.html?search_key=' + encodeURIComponent(term) }
                 ];
 
                 const images = [
@@ -286,3 +292,7 @@
     </script>
 </body>
 </html>
+"""
+
+# عرض تطبيق الويب داخل Streamlit
+components.html(html_code, height=1000, scrolling=True)

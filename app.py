@@ -1,7 +1,6 @@
 import os
 import streamlit as st
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 # 1. إعدادات الصفحة
 st.set_page_config(
@@ -11,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. حقن CSS للتنسيق بدون أخطاء SyntaxError
+# 2. إضافة تنسيقات CSS بشكل صحيح داخل نصوص لتفادي أخطاء SyntaxError
 st.markdown("""
     <style>
     /* إعدادات الاتجاه العربي والتصميم الداكن */
@@ -48,17 +47,23 @@ with st.sidebar:
     st.title("⚙️ الإعدادات")
     st.markdown("---")
     
-    # الحصول على المفتاح من secrets أو إدخاله يدويًا
+    # محاولة الحصول على المفتاح من secrets أو البيئة، أو إدخاله يدويًا
+    default_key = ""
+    if "GEMINI_API_KEY" in st.secrets:
+        default_key = st.secrets["GEMINI_API_KEY"]
+    elif "GEMINI_API_KEY" in os.environ:
+        default_key = os.environ["GEMINI_API_KEY"]
+        
     api_key_input = st.text_input(
         "أدخل مفتاح Gemini API:",
         type="password",
-        value=os.environ.get("GEMINI_API_KEY", ""),
+        value=default_key,
         help="يمكنك الحصول على المفتاح من Google AI Studio"
     )
     
     model_choice = st.selectbox(
         "اختر النموذج:",
-        ["gemini-2.5-flash", "gemini-2.5-pro"],
+        ["gemini-1.5-flash", "gemini-1.5-pro"],
         index=0
     )
     
@@ -67,7 +72,7 @@ with st.sidebar:
         st.rerun()
 
 st.title("🤖 مساعد الذكاء الاصطناعي")
-st.caption("مرحبًا بك! اسألني أي سؤال باللغة العربية أو باللغات البرمجية.")
+st.caption("مرحبًا بك! اسألني أي سؤال باللغة العربية أو بأسئلة البرمجة.")
 
 # 4. تهيئة سجل المحادثة في الجلسة
 if "messages" not in st.session_state:
@@ -82,7 +87,6 @@ for message in st.session_state.messages:
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
-    # التحقق من وجود مفتاح الـ API
     if not api_key_input:
         st.error("الرجاء إدخال مفتاح Gemini API في الشريط الجانبي للبدء.")
     else:
@@ -95,16 +99,14 @@ if user_input:
         with st.chat_message("assistant"):
             with st.spinner("جاري التفكير..."):
                 try:
-                    # إنشاء العميل باستخدام المكتبة الرسمية الجديدة
-                    client = genai.Client(api_key=api_key_input)
+                    # تهيئة المكتبة بمفتاح الـ API
+                    genai.configure(api_key=api_key_input)
+                    model = genai.GenerativeModel(model_choice)
                     
-                    # إرسال الطلب للنموذج
-                    response = client.models.generate_content(
-                        model=model_choice,
-                        contents=user_input
-                    )
-                    
+                    # إرسال الطلب
+                    response = model.generate_content(user_input)
                     bot_reply = response.text
+                    
                     st.markdown(bot_reply)
                     
                     # حفظ رد البوت في الجلسة

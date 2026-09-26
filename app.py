@@ -1,150 +1,114 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>موقع الذكاء الاصطناعي</title>
+import os
+import streamlit as st
+from google import genai
+from google.genai import types
+
+# 1. إعدادات الصفحة
+st.set_page_config(
+    page_title="مساعد الذكاء الاصطناعي",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 2. حقن CSS للتنسيق بدون أخطاء SyntaxError
+st.markdown("""
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        header {
-            background-color: #1e293b;
-            padding: 1rem 2rem;
-            text-align: center;
-            border-bottom: 1px solid #334155;
-        }
-
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .message {
-            max-width: 75%;
-            padding: 1rem;
-            border-radius: 12px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-
-        .user-message {
-            align-self: flex-start;
-            background-color: #2563eb;
-            color: #ffffff;
-            border-bottom-right-radius: 2px;
-        }
-
-        .ai-message {
-            align-self: flex-end;
-            background-color: #334155;
-            color: #f8fafc;
-            border-bottom-left-radius: 2px;
-        }
-
-        #input-container {
-            padding: 1rem;
-            background-color: #1e293b;
-            display: flex;
-            gap: 0.5rem;
-            border-top: 1px solid #334155;
-        }
-
-        input {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid #475569;
-            background-color: #0f172a;
-            color: #fff;
-            outline: none;
-        }
-
-        button {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            border: none;
-            background-color: #2563eb;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #1d4ed8;
-        }
+    /* إعدادات الاتجاه العربي والتصميم الداكن */
+    html, body, [class*="css"] {
+        direction: rtl;
+        text-align: right;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* خلفية التطبيق */
+    .stApp {
+        background-color: #0f172a;
+        color: #f8fafc;
+    }
+    
+    /* تنسيق مربع الحوار والرسائل */
+    .stChatMessage {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 1rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+    
+    /* إخفاء القوائم والترويسات غير الضرورية */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
-</head>
-<body>
+""", unsafe_allow_html=True)
 
-    <header>
-        <h2>مساعد الذكاء الاصطناعي</h2>
-    </header>
+# 3. الشريط الجانبي للإعدادات
+with st.sidebar:
+    st.title("⚙️ الإعدادات")
+    st.markdown("---")
+    
+    # الحصول على المفتاح من secrets أو إدخاله يدويًا
+    api_key_input = st.text_input(
+        "أدخل مفتاح Gemini API:",
+        type="password",
+        value=os.environ.get("GEMINI_API_KEY", ""),
+        help="يمكنك الحصول على المفتاح من Google AI Studio"
+    )
+    
+    model_choice = st.selectbox(
+        "اختر النموذج:",
+        ["gemini-2.5-flash", "gemini-2.5-pro"],
+        index=0
+    )
+    
+    if st.button("تصفير المحادثة 🗑️"):
+        st.session_state.messages = []
+        st.rerun()
 
-    <div id="chat-container"></div>
+st.title("🤖 مساعد الذكاء الاصطناعي")
+st.caption("مرحبًا بك! اسألني أي سؤال باللغة العربية أو باللغات البرمجية.")
 
-    <div id="input-container">
-        <input type="text" id="user-input" placeholder="اكتب سؤالك هنا..." onkeydown="if(event.key==='Enter') sendMessage()">
-        <button onclick="sendMessage()">إرسال</button>
-    </div>
+# 4. تهيئة سجل المحادثة في الجلسة
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-    <script>
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const chatContainer = document.getElementById('chat-container');
-            const text = input.value.trim();
+# عرض المحادثات السابقة
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-            if (!text) return;
+# 5. استقبال مدخلات المستخدم ومعالجتها
+user_input = st.chat_input("اكتب سؤالك هنا...")
 
-            // إضافة رسالة المستخدم
-            appendMessage(text, 'user-message');
-            input.value = '';
+if user_input:
+    # التحقق من وجود مفتاح الـ API
+    if not api_key_input:
+        st.error("الرجاء إدخال مفتاح Gemini API في الشريط الجانبي للبدء.")
+    else:
+        # عرض رسالة المستخدم
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
 
-            // إضافة مؤشر الانتظار
-            const loadingDiv = appendMessage('جاري التفكير...', 'ai-message');
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
-                });
-
-                const data = await response.json();
-                loadingDiv.textContent = data.reply || data.error;
-            } catch (err) {
-                loadingDiv.textContent = 'حدث خطأ في الاتصال بالسيرفر.';
-            }
-
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function appendMessage(text, className) {
-            const chatContainer = document.getElementById('chat-container');
-            const div = document.createElement('div');
-            div.className = `message ${className}`;
-            div.textContent = text;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return div;
-        }
-    </script>
-</body>
-</html>
+        # توليد الرد من الذكاء الاصطناعي
+        with st.chat_message("assistant"):
+            with st.spinner("جاري التفكير..."):
+                try:
+                    # إنشاء العميل باستخدام المكتبة الرسمية الجديدة
+                    client = genai.Client(api_key=api_key_input)
+                    
+                    # إرسال الطلب للنموذج
+                    response = client.models.generate_content(
+                        model=model_choice,
+                        contents=user_input
+                    )
+                    
+                    bot_reply = response.text
+                    st.markdown(bot_reply)
+                    
+                    # حفظ رد البوت في الجلسة
+                    st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+                    
+                except Exception as e:
+                    st.error(f"حدث خطأ أثناء الاتصال بالخدمة: {str(e)}")

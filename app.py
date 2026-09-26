@@ -5,7 +5,7 @@ import streamlit as st
 
 # 1. إعدادات الصفحة والتصميم
 st.set_page_config(
-    page_title="مساعد الذكاء الاصطناعي",
+    page_title="Vita - مساعد الذكاء الاصطناعي",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -55,16 +55,14 @@ with st.sidebar:
         help="ضع المفتاح هنا أو في Secrets"
     )
     
-    # تثبيت النموذج المطلوب بالضبط بحسب الرسالة
     model_choice = "gemini-3.8-flash"
-    st.info(f"النموج المستخدم: {model_choice}")
     
     if st.button("تصفير المحادثة 🗑️"):
         st.session_state.messages = []
         st.rerun()
 
-st.title("🤖 مساعد الذكاء الاصطناعي")
-st.caption("مرحبًا بك! اسألني أي سؤال وسيتم توليد الإجابة فوراً.")
+st.title("🤖 Vita - مساعد الذكاء الاصطناعي")
+st.caption("مرحبًا بك! أنا Vita، مساعدك الذكي. اسألني أي سؤال وسيتم إجابتك فوراً.")
 
 # 5. تهيئة سجل المحادثة
 if "messages" not in st.session_state:
@@ -75,21 +73,19 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 6. استقبال وتوليد الردود بسرعة عبر البث المباشر
+# 6. استقبال وتوليد الردود باسم Vita
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
     active_key = api_key_input or saved_key
     
     if not active_key:
-        st.error("يرجى إدخال مفتاح Gemini API في الشريط الجانبي أو إضافته إلى Secrets للبدء.")
+        st.error("يرجى إدخال مفتاح API في الشريط الجانبي أو إضافته إلى Secrets للبدء.")
     else:
-        # عرض رسالة المستخدم
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
 
-        # طلب الرد مع خاصية البث المباشر (Streaming)
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             full_response = ""
@@ -97,7 +93,14 @@ if user_input:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:streamGenerateContent?alt=sse&key={active_key}"
                 headers = {"Content-Type": "application/json"}
+                
+                # إضافة توجيهات النظام (systemInstruction) لإجباره على تعريف نفسه باسم Vita
                 payload = {
+                    "systemInstruction": {
+                        "parts": [
+                            {"text": "اسمك هو Vita. أنت مساعد ذكاء اصطناعي ذكي ولطيف ومطور بواسطة تطبيق Vita. إذا سألك أحد عن اسمك أو من أنت، يجب أن تجيب دائماً بأن اسمك Vita."}
+                        ]
+                    },
                     "contents": [
                         {
                             "parts": [{"text": user_input}]

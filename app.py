@@ -1,17 +1,16 @@
 import os
-import json
-import requests
 import streamlit as st
+import google.generativeai as genai
 
-# 1. إعدادات الصفحة
+# 1. إعدادات الصفحة والتصميم
 st.set_page_config(
-    page_title="مساعد الذكاء الاصطناعي السريع",
-    page_icon="⚡",
+    page_title="مساعد الذكاء الاصطناعي",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. تنسيق الواجهة بلغة CSS
+# 2. تنسيق الواجهة بالـ CSS (محاذاة وتصميم داكن)
 st.markdown("""
     <style>
     html, body, [class*="css"] {
@@ -19,12 +18,10 @@ st.markdown("""
         text-align: right;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
     .stApp {
         background-color: #0f172a;
         color: #f8fafc;
     }
-    
     .stChatMessage {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
@@ -32,14 +29,13 @@ st.markdown("""
         padding: 1rem !important;
         margin-bottom: 0.8rem !important;
     }
-    
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# 3. جلب مفتاح الـ API تلقائياً
+# 3. جلب المفتاح تلقائياً من Secrets أو البيئة
 saved_key = ""
 if "GEMINI_API_KEY" in st.secrets:
     saved_key = st.secrets["GEMINI_API_KEY"]
@@ -55,25 +51,17 @@ with st.sidebar:
         "مفتاح Gemini API:",
         type="password",
         value=saved_key,
-        help="ضع مفتاح API هنا أو أضفه في Secrets"
-    )
-    
-    # نماذج فائقة السرعة
-    model_choice = st.selectbox(
-        "اختر النموذج السريع:",
-        ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-2.0-flash-exp"],
-        index=0
+        help="ضع المفتاح هنا أو في Secrets"
     )
     
     if st.button("تصفير المحادثة 🗑️"):
         st.session_state.messages = []
         st.rerun()
 
-# 5. الواجهة الرئيسية
-st.title("⚡ مساعد الذكاء الاصطناعي السريع")
-st.caption("مرحبًا بك! اسألني أي سؤال وسيتم توليد الإجابة فوراً وبسرعة فائقة.")
+st.title("🤖 مساعد الذكاء الاصطناعي")
+st.caption("مرحبًا بك! اسألني أي سؤال وسيتم توليد الإجابة فوراً.")
 
-# 6. تهيئة سجل المحادثة
+# 5. تهيئة سجل المحادثة
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -82,7 +70,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 7. استقبال مدخلات المستخدم ومعالجتها بأسلوب البث المباشر (Streaming)
+# 6. استقبال وتوليد الردود بسرعة
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
@@ -96,46 +84,25 @@ if user_input:
         with st.chat_message("user"):
             st.markdown(user_input)
 
-        # توليد الرد السريع عبر البث المباشر (streamGenerateContent)
+        # توليد الرد السريع عبر المكتبة الرسمية
         with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            full_response = ""
-            
             try:
-                # استخدام رابط البث المباشر المباشر لتسريع النتيجة
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:streamGenerateContent?alt=sse&key={active_key}"
-                headers = {"Content-Type": "application/json"}
-                payload = {
-                    "contents": [
-                        {
-                            "parts": [{"text": user_input}]
-                        }
-                    ]
-                }
+                genai.configure(api_key=active_key)
+                # استخدام النموذج الرسمي الشغال والسريع
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                
+                # كتابة البث المباشر للإجابة حياً
+                response = model.generate_content(user_input, stream=True)
+                
+                def stream_generator():
+                    for chunk in response:
+                        if chunk.text:
+                            yield chunk.text
 
-                response = requests.post(url, headers=headers, json=payload, stream=True)
-
-                if response.status_code == 200:
-                    for line in response.iter_lines():
-                        if line:
-                            line_text = line.decode("utf-8")
-                            if line_text.startswith("data: "):
-                                json_str = line_text[6:]
-                                try:
-                                    data = json.loads(json_str)
-                                    text_chunk = data["candidates"][0]["content"]["parts"][0].get("text", "")
-                                    full_response += text_chunk
-                                    # تحديث النص حياً فور وصول الحروف
-                                    message_placeholder.markdown(full_response + " ▌")
-                                except Exception:
-                                    continue
-                    # إزالة مؤشر الكتابة عند الانتهاء
-                    message_placeholder.markdown(full_response)
-                    st.session_state.messages.append({"role": "assistant", "content": full_response})
-                else:
-                    res_data = response.json()
-                    error_msg = res_data.get("error", {}).get("message", "حدث خطأ من السيرفر، يرجى إعادة المحاولة.")
-                    st.error(f"تنبيه: {error_msg}")
+                bot_reply = st.write_stream(stream_generator)
+                
+                # حفظ الرد
+                st.session_state.messages.append({"role": "assistant", "content": bot_reply})
 
             except Exception as e:
-                st.error(f"حدث خطأ أثناء الاتصال: {str(e)}")
+                st.error(f"حدث خطأ: {str(e)}")

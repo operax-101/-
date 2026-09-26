@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. تنسيق الواجهة بالـ CSS (محاذاة وتصميم داكن)
+# 2. تنسيق الواجهة بالـ CSS
 st.markdown("""
     <style>
     html, body, [class*="css"] {
@@ -36,24 +36,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. جلب المفتاح تلقائياً من Secrets أو البيئة
-saved_key = ""
+# 3. جلب المفتاح السري الخاص بالمالك تلقائياً من Streamlit Secrets
+API_KEY = ""
 if "GEMINI_API_KEY" in st.secrets:
-    saved_key = st.secrets["GEMINI_API_KEY"]
+    API_KEY = st.secrets["GEMINI_API_KEY"]
 elif "GEMINI_API_KEY" in os.environ:
-    saved_key = os.environ["GEMINI_API_KEY"]
+    API_KEY = os.environ["GEMINI_API_KEY"]
 
-# 4. الشريط الجانبي
+# 4. الشريط الجانبي (بدون إدخال مفاتيح)
 with st.sidebar:
-    st.title("⚙️ الإعدادات")
+    st.title("⚙️ الخيارات")
     st.markdown("---")
-    
-    api_key_input = st.text_input(
-        "مفتاح Gemini API:",
-        type="password",
-        value=saved_key,
-        help="ضع المفتاح هنا أو في Secrets"
-    )
     
     model_choice = "gemini-3.8-flash"
     
@@ -73,14 +66,12 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 6. استقبال وتوليد الردود باسم Vita
+# 6. استقبال وتوليد الردود مباشرة
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
-    active_key = api_key_input or saved_key
-    
-    if not active_key:
-        st.error("يرجى إدخال مفتاح API في الشريط الجانبي أو إضافته إلى Secrets للبدء.")
+    if not API_KEY:
+        st.error("الموقع قيد التهيئة من قبل المالك. يرجى مراجعة إعدادات المفتاح.")
     else:
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
@@ -91,10 +82,9 @@ if user_input:
             full_response = ""
             
             try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:streamGenerateContent?alt=sse&key={active_key}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:streamGenerateContent?alt=sse&key={API_KEY}"
                 headers = {"Content-Type": "application/json"}
                 
-                # إضافة توجيهات النظام (systemInstruction) لإجباره على تعريف نفسه باسم Vita
                 payload = {
                     "systemInstruction": {
                         "parts": [

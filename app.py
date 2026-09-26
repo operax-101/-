@@ -50,17 +50,17 @@ with st.sidebar:
     st.title("⚙️ الإعدادات")
     st.markdown("---")
     
-    # إذا لم يكن المفتاح محفوظاً في Secrets، يتيح لك إدخاله هنا
     api_key_input = st.text_input(
         "مفتاح Gemini API:",
         type="password",
         value=saved_key,
-        help="ضع مفتاح API هنا أو اضفه في Secrets"
+        help="ضع مفتاح API هنا أو أضفه في Secrets"
     )
     
+    # تحديث أسماء النماذج إلى أحدث إصدارات Gemini 2.5
     model_choice = st.selectbox(
         "اختر النموذج:",
-        ["gemini-1.5-flash", "gemini-1.5-pro"],
+        ["gemini-2.5-flash", "gemini-2.5-pro"],
         index=0
     )
     

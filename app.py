@@ -7,13 +7,12 @@ st.set_page_config(
     page_title="مساعد الذكاء الاصطناعي",
     page_icon="🤖",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # 2. تنسيق الواجهة بلغة CSS
 st.markdown("""
     <style>
-    /* إعدادات اتجاه النص والتصميم */
     html, body, [class*="css"] {
         direction: rtl;
         text-align: right;
@@ -39,17 +38,25 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. جلب مفتاح الـ API تلقائياً من Secrets أو البيئة
-API_KEY = ""
+# 3. جلب مفتاح الـ API تلقائياً إن وجد
+saved_key = ""
 if "GEMINI_API_KEY" in st.secrets:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
+    saved_key = st.secrets["GEMINI_API_KEY"]
 elif "GEMINI_API_KEY" in os.environ:
-    API_KEY = os.environ["GEMINI_API_KEY"]
+    saved_key = os.environ["GEMINI_API_KEY"]
 
-# 4. الشريط الجانبي (للخيارات المتبقية فقط)
+# 4. الشريط الجانبي
 with st.sidebar:
-    st.title("⚙️ الخيارات")
+    st.title("⚙️ الإعدادات")
     st.markdown("---")
+    
+    # إذا لم يكن المفتاح محفوظاً في Secrets، يتيح لك إدخاله هنا
+    api_key_input = st.text_input(
+        "مفتاح Gemini API:",
+        type="password",
+        value=saved_key,
+        help="ضع مفتاح API هنا أو اضفه في Secrets"
+    )
     
     model_choice = st.selectbox(
         "اختر النموذج:",
@@ -61,7 +68,7 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# 5. واجهة التطبيق الرئيسية
+# 5. الواجهة الرئيسية
 st.title("🤖 مساعد الذكاء الاصطناعي")
 st.caption("مرحبًا بك! اسألني أي سؤال باللغة العربية أو بأسئلة البرمجة.")
 
@@ -74,23 +81,25 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 7. استقبال مدخلات المستخدم ومعالجتها
+# 7. استقبال مدخلات المستخدم
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
-    if not API_KEY:
-        st.error("مفتاح API غير معرف في Streamlit Secrets. يرجى إضافة GEMINI_API_KEY في إعدادات Secrets لموقعك.")
+    active_key = api_key_input or saved_key
+    
+    if not active_key:
+        st.error("يرجى أدخال مفتاح Gemini API في الشريط الجانبي أو إضافته إلى Secrets للبدء.")
     else:
         # عرض رسالة المستخدم
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
 
-        # توليد الرد من الذكاء الاصطناعي عبر طلب REST API مباشر
+        # طلب الرد من API
         with st.chat_message("assistant"):
             with st.spinner("جاري التفكير..."):
                 try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:generateContent?key={API_KEY}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:generateContent?key={active_key}"
                     headers = {"Content-Type": "application/json"}
                     payload = {
                         "contents": [

@@ -57,10 +57,10 @@ with st.sidebar:
         help="ضع مفتاح API هنا أو أضفه في Secrets"
     )
     
-    # تحديث أسماء النماذج إلى أحدث إصدارات Gemini 2.5
+    # التحديث باسم النموذج الجديد بناءً على رسالة الخطأ
     model_choice = st.selectbox(
         "اختر النموذج:",
-        ["gemini-2.5-flash", "gemini-2.5-pro"],
+        ["gemini-3.8-flash"],
         index=0
     )
     

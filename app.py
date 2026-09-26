@@ -7,12 +7,13 @@ st.set_page_config(
     page_title="مساعد الذكاء الاصطناعي",
     page_icon="🤖",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# 2. تنسيق الواجهة بالـ CSS
+# 2. تنسيق الواجهة بلغة CSS
 st.markdown("""
     <style>
+    /* إعدادات اتجاه النص والتصميم */
     html, body, [class*="css"] {
         direction: rtl;
         text-align: right;
@@ -38,23 +39,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. الشريط الجانبي للإعدادات
+# 3. جلب مفتاح الـ API تلقائياً من Secrets أو البيئة
+API_KEY = ""
+if "GEMINI_API_KEY" in st.secrets:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+elif "GEMINI_API_KEY" in os.environ:
+    API_KEY = os.environ["GEMINI_API_KEY"]
+
+# 4. الشريط الجانبي (للخيارات المتبقية فقط)
 with st.sidebar:
-    st.title("⚙️ الإعدادات")
+    st.title("⚙️ الخيارات")
     st.markdown("---")
-    
-    default_key = ""
-    if "GEMINI_API_KEY" in st.secrets:
-        default_key = st.secrets["GEMINI_API_KEY"]
-    elif "GEMINI_API_KEY" in os.environ:
-        default_key = os.environ["GEMINI_API_KEY"]
-        
-    api_key_input = st.text_input(
-        "أدخل مفتاح Gemini API:",
-        type="password",
-        value=default_key,
-        help="يمكنك الحصول على المفتاح من Google AI Studio"
-    )
     
     model_choice = st.selectbox(
         "اختر النموذج:",
@@ -66,10 +61,11 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
+# 5. واجهة التطبيق الرئيسية
 st.title("🤖 مساعد الذكاء الاصطناعي")
-st.caption("مرحبًا بك! اسألني أي سؤال باللغة العربية أو باللغات البرمجية.")
+st.caption("مرحبًا بك! اسألني أي سؤال باللغة العربية أو بأسئلة البرمجة.")
 
-# 4. تهيئة سجل المحادثة
+# 6. تهيئة سجل المحادثة
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -78,23 +74,23 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 5. استقبال مدخلات المستخدم ومعالجتها مباشرة عبر API
+# 7. استقبال مدخلات المستخدم ومعالجتها
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
-    if not api_key_input:
-        st.error("الرجاء إدخال مفتاح Gemini API في الشريط الجانبي للبدء.")
+    if not API_KEY:
+        st.error("مفتاح API غير معرف في Streamlit Secrets. يرجى إضافة GEMINI_API_KEY في إعدادات Secrets لموقعك.")
     else:
         # عرض رسالة المستخدم
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
 
-        # توليد الرد عبر طلب REST API مباشر
+        # توليد الرد من الذكاء الاصطناعي عبر طلب REST API مباشر
         with st.chat_message("assistant"):
             with st.spinner("جاري التفكير..."):
                 try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:generateContent?key={api_key_input}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:generateContent?key={API_KEY}"
                     headers = {"Content-Type": "application/json"}
                     payload = {
                         "contents": [
@@ -113,7 +109,7 @@ if user_input:
                         st.session_state.messages.append({"role": "assistant", "content": bot_reply})
                     else:
                         error_msg = res_data.get("error", {}).get("message", "حدث خطأ غير معروف")
-                        st.error(f"خطأ من API: {error_msg}")
+                        st.error(f"خطأ من الـ API: {error_msg}")
 
                 except Exception as e:
                     st.error(f"حدث خطأ أثناء الاتصال: {str(e)}")

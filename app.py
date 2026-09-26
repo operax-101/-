@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. تنسيق الواجهة بالـ CSS (محاذاة وتصميم داكن)
+# 2. تنسيق الواجهة بالـ CSS (محاذاة وضبط خلفية الشريط الجانبي)
 st.markdown("""
     <style>
     html, body, [class*="css"] {
@@ -19,10 +19,20 @@ st.markdown("""
         text-align: right;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+    
+    /* خلفية التطبيق الأساسية */
     .stApp {
         background-color: #0f172a;
         color: #f8fafc;
     }
+    
+    /* تصميم وإبراز الشريط الجانبي لتفادي الشفافية */
+    [data-testid="stSidebar"] {
+        background-color: #1e293b !important;
+        border-left: 1px solid #334155 !important;
+    }
+    
+    /* تنسيق فقاعات المحادثة */
     .stChatMessage {
         background-color: #1e293b !important;
         border: 1px solid #334155 !important;
@@ -30,37 +40,34 @@ st.markdown("""
         padding: 1rem !important;
         margin-bottom: 0.8rem !important;
     }
+    
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# 3. جلب المفتاح تلقائياً من Secrets أو البيئة
-saved_key = ""
+# 3. جلب المفتاح تلقائياً من Secrets أو البيئة الخاصة بالمالك
+active_key = ""
 if "GEMINI_API_KEY" in st.secrets:
-    saved_key = st.secrets["GEMINI_API_KEY"]
+    active_key = st.secrets["GEMINI_API_KEY"]
 elif "GEMINI_API_KEY" in os.environ:
-    saved_key = os.environ["GEMINI_API_KEY"]
+    active_key = os.environ["GEMINI_API_KEY"]
 
 # 4. الشريط الجانبي
 with st.sidebar:
-    st.title("⚙️ الإعدادات")
+    st.title("⚙️ الخيارات")
     st.markdown("---")
-    
-    api_key_input = st.text_input(
-        "مفتاح Gemini API:",
-        type="password",
-        value=saved_key,
-        help="ضع المفتاح هنا أو في Secrets"
-    )
     
     model_choice = "gemini-3.8-flash"
     
-    if st.button("تصفير المحادثة 🗑️"):
+    st.info("🤖 **المساعد:** Vita")
+    
+    if st.button("تصفير المحادثة 🗑️", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
+# الواجهة الرئيسية
 st.title("🤖 Vita - مساعد الذكاء الاصطناعي")
 st.caption("مرحبًا بك! أنا Vita، مساعدك الذكي. اسألني أي سؤال وسيتم إجابتك فوراً.")
 
@@ -77,10 +84,8 @@ for message in st.session_state.messages:
 user_input = st.chat_input("اكتب سؤالك هنا...")
 
 if user_input:
-    active_key = api_key_input or saved_key
-    
     if not active_key:
-        st.error("يرجى إدخال مفتاح API في الشريط الجانبي أو إضافته إلى Secrets للبدء.")
+        st.error("لم يتم العثور على مفتاح API. يرجى إضافة GEMINI_API_KEY في قسم Secrets الخاص بالمشروع.")
     else:
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
@@ -94,7 +99,7 @@ if user_input:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:streamGenerateContent?alt=sse&key={active_key}"
                 headers = {"Content-Type": "application/json"}
                 
-                # إضافة توجيهات النظام (systemInstruction) لإجباره على تعريف نفسه باسم Vita
+                # توجيه النظام لتعريف المساعد باسم Vita
                 payload = {
                     "systemInstruction": {
                         "parts": [
